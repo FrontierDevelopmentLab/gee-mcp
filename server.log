@@ -1,0 +1,7 @@
+2026-04-01 08:03:55,757 - SERVER - INFO - HTTP Request: GET https://pypi.org/pypi/fastmcp/json "HTTP/1.1 200 OK"
+2026-04-01 08:03:56,035 - SERVER - INFO - Starting worker 'raulramos#904593' with the following tasks:
+2026-04-01 08:03:56,038 - SERVER - INFO - * trace(message: str, ...)
+2026-04-01 08:03:56,038 - SERVER - INFO - * fail(message: str, ...)
+2026-04-01 08:03:56,039 - SERVER - INFO - * sleep(seconds: float, ...)
+2026-04-01 08:03:56,081 - SERVER - INFO - Processing request of type CallToolRequest
+2026-04-01 08:04:06,316 - SERVER - INFO - Processing request of type ListToolsRequest

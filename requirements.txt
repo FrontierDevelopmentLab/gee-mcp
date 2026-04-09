@@ -1,0 +1,10 @@
+fastmcp
+earthengine-api
+requests
+beautifulsoup4
+markitdown
+loguru
+pandas
+numpy
+mermaid-py
+python-dotenv
