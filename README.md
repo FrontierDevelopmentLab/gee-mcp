@@ -65,7 +65,7 @@ It returns a json structure with several objects, most notably
 - `python_code_fix_history`: the iterative fixes made to the code
 - `python_code_result`: the result after executing the code
 
-And this is the answer when running this code.
+This is the code generated
 
 ```python
 import ee
