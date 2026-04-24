@@ -140,7 +140,7 @@ and this is the result when running the generated code (also done by the tool ca
 
 Observe that the generated code also returns a `Map` object so that it can be displayed in appropriate environments, such as IPython Notebookes. For instance, for this question
 
-    Characterize the morphometry and land cover of the Emme catchment in the Canton of Bern by determining its total area, maximum elevation, and forest cover percentage. Additionally, state the financial magnitude of the damages caused by the flash flood event in this catchment (specifically in Schangnau) during July 2014.
+_Characterize the morphometry and land cover of the Emme catchment in the Canton of Bern by determining its total area, maximum elevation, and forest cover percentage. Additionally, state the financial magnitude of the damages caused by the flash flood event in this catchment (specifically in Schangnau) during July 2014._
 
 the generated code returns the following answer and map:
 
