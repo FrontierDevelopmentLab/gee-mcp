@@ -128,7 +128,7 @@ def gee_main():
     return result_xml, Map
   ```
 
-and this is the result
+and this is the result when running the generated code (also done by the tool call itself)
 
 ```xml
 <RESULT>
