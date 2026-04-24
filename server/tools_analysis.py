@@ -821,6 +821,23 @@ def extract_factuality_issues(question: str, python_code: str) -> str:
 
 
 
+
+@mcp.tool(
+    description=(
+        "makes an assessment of a factuality issue identified in a Google Earth Engine Python"
+        "that attemps to answer an Earth Observation Question." \
+        "" \
+        "The answer includes a textual assessment, as well as possibly suggestions to update" \
+        "the Google Earth Engine Python code to improve the reliability of the answer"         
+    )
+)
+def _assess_factuality_issue(question: str, python_code: str) -> str:
+    from .analysis import _assess_factuality_issue
+    r = _assess_factuality_issue(question=question, python_code=python_code)
+    return r
+
+
+
 @mcp.tool(
     description=(
         """

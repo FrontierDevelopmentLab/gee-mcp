@@ -600,3 +600,66 @@ def _extract_factuality_issues(question: str, python_code: str) -> str:
     r = genai_client.call(prompt)
     return extract_tag(r['answer'], 'json')
 
+
+async def _assess_factuality_issue(question: str, 
+                                   python_code: str,
+                                   issue_title: str,
+                                   issue_description: str,
+                                   issue_facts: str,
+                                   issue_question_for_expert: str) -> str:
+
+    prompt = f"""
+    I am trying solve the following Earth Observation question
+
+    <EO_QUESTION>
+    {question}
+    </EO_QUESTION>
+
+    using the following Google Earth Engine Python script
+
+    <PYTHON>
+    {python_code}
+    </PYTHON>
+
+    I want to check the following issue raised by an Earth Observation expert
+
+    <ISSUE_TITLE>
+    {issue_title}
+    </ISSUE_TITLE>
+
+    <ISSUE_DESCRIPTION>
+    {issue_description}
+    </ISSUE_DESCRIPTION>
+
+    <ISSUE_FACTS>
+    {issue_facts}
+    </ISSUE_FACTS>
+
+    You task, as an Earth Observation expert, is to answer the following question
+
+    {issue_question_for_expert}
+
+    Express your asessment as free Markdown text. 
+
+    If you have recommendations to fix or update the code, add a json string within
+    an xml tag <CODE_RECOMMENDATIONS> with the following structure
+
+    <CODE_RECOMMENDATIONS>
+    {{ 'recommendation_1_title': {{ 'explanation': an explanation of the recommendation,
+                                    'code_snippet': a string with python code with the suggested code udpate }}
+    'recommendation_1_title': {{ 'explanation': an explanation of the recommendation,
+                                    'code_snippet': a string with python code with the suggested code udpate }}
+    }}
+    </CODE_RECOMMENDATIONS>
+    """
+
+    genai_client = init_genai_client()
+    r = genai_client.call(prompt)
+
+    code_recommendations = extract_xml_tag(r['answer'], 'CODE_RECOMMENDATIONS')
+    if '```json' in code_recommendations:
+        code_recommendations = extract_tag(code_recommendations, 'json')
+    r['answer'] = r['answer'].replace(code_recommendations, '')
+    r.update({'code_recommendations': code_recommendations})
+    return json.dumps(r)
+~
