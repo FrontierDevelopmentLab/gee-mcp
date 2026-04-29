@@ -7,7 +7,7 @@ from google.genai import types
 from loguru import logger
 
 
-def init_genai_client(model="gemini-2.5-pro"):
+def init_genai_client(model="gemini-3.1-pro-preview"):
     api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     vertexai_project = os.getenv("VERTEXAI_PROJECT", False)
     vertexai_location = os.getenv("VERTEXAI_LOCATION", "global")
@@ -33,7 +33,7 @@ class Gemini:
         api_key=None,
         project=None,
         location="global",
-        model="gemini-2.5-pro",
+        model="gemini-3.1-pro-preview",
         cache_dir=None,
     ):
         """
