@@ -5,13 +5,9 @@ Tools
 - ``answer_eo_question_with_gee``
 """
 
-import json
-import logging
-from typing import Any, Dict, List, Optional
-
-import ee
 
 from .app import mcp
+
 
 # -------------------------------------------------------------------
 # Tool: answer EO question by generating GEE Python code with iterative
@@ -23,7 +19,9 @@ from .app import mcp
         "code with iterative error fixing and executing it."
     )
 )
-def generate_python_from_question(question: str, gee_datasets: list = None, fix_code: bool = True) -> dict:
+def generate_python_from_question(
+    question: str, gee_datasets: list = None, fix_code: bool = True
+) -> dict:
     """
     Answer an Earth Observation question by generating Google Earth Engine Python
     code with iterative error fixing and executing it.
@@ -39,18 +37,21 @@ def generate_python_from_question(question: str, gee_datasets: list = None, fix_
 
     from .codegen import _generate_python_from_question
 
-    return _generate_python_from_question(question=question,
-                                          gee_datasets=gee_datasets,
-                                          fix_code=fix_code)
+    return _generate_python_from_question(
+        question=question, gee_datasets=gee_datasets, fix_code=fix_code
+    )
+
 
 @mcp.tool(
     description=(
-        "generates a graph describing an earth observation pipeline that would solve" \
-        "a question. The graph nodes contain 'verbose' information about what to do at" \
+        "generates a graph describing an earth observation pipeline that would solve"
+        "a question. The graph nodes contain 'verbose' information about what to do at"
         "each step but makes no reference to python or gee code"
     )
 )
-def generate_abstract_graph_from_question(question: str, gee_datasets: list = None) -> dict:
+def generate_abstract_graph_from_question(
+    question: str, gee_datasets: list = None
+) -> dict:
     """
     Answer an Earth Observation question by generating Google Earth Engine Python
     code with iterative error fixing and executing it.
@@ -62,21 +63,25 @@ def generate_abstract_graph_from_question(question: str, gee_datasets: list = No
 
     from .codegen import _generate_abstract_graph_from_question
 
-    return _generate_abstract_graph_from_question(question=question,
-                                                  gee_datasets=gee_datasets)
+    return _generate_abstract_graph_from_question(
+        question=question, gee_datasets=gee_datasets
+    )
+
 
 @mcp.tool(
     description=(
         "Answer an Earth Observation question by generating Google Earth Engine Python"
-        "code with iterative error fixing and executing it. The user must provide a" \
-        "string describing the reasoning steps he would take to solve the question" \
+        "code with iterative error fixing and executing it. The user must provide a"
+        "string describing the reasoning steps he would take to solve the question"
         "and these will be used to guide and support the code generation."
     )
 )
-def generate_python_from_reasoning_steps(question: str, 
-                                         reasoning_steps: str,
-                                         gee_datasets: list = None, 
-                                         fix_code: bool = True) -> dict:
+def generate_python_from_reasoning_steps(
+    question: str,
+    reasoning_steps: str,
+    gee_datasets: list = None,
+    fix_code: bool = True,
+) -> dict:
     """
     returns a json structure with the following fields:
             "python_code": the generated python code
@@ -88,24 +93,29 @@ def generate_python_from_reasoning_steps(question: str,
     """
     from .codegen import _generate_python_from_reasoning_steps
 
-    return _generate_python_from_reasoning_steps(question=question,
-                                                 reasoning_steps=reasoning_steps,
-                                                 gee_datasets=gee_datasets,
-                                                 fix_code=fix_code)
+    return _generate_python_from_reasoning_steps(
+        question=question,
+        reasoning_steps=reasoning_steps,
+        gee_datasets=gee_datasets,
+        fix_code=fix_code,
+    )
+
 
 @mcp.tool(
     description=(
         "Answer an Earth Observation question by generating Google Earth Engine Python"
-        "code with iterative error fixing and executing it. The user must provide a" \
-        "string with a graph in Mermaid format describing the earth observation pipeline "\
-        "that would solve the problem. The pipeline will be used to guide and support " \
+        "code with iterative error fixing and executing it. The user must provide a"
+        "string with a graph in Mermaid format describing the earth observation pipeline "
+        "that would solve the problem. The pipeline will be used to guide and support "
         "the code generation."
     )
 )
-def generate_python_from_abstract_graph(question: str, 
-                                         abstract_graph: str,
-                                         gee_datasets: list = None, 
-                                         fix_code: bool = True) -> dict:
+def generate_python_from_abstract_graph(
+    question: str,
+    abstract_graph: str,
+    gee_datasets: list = None,
+    fix_code: bool = True,
+) -> dict:
     """
     returns a json structure with the following fields:
             "python_code": the generated python code
@@ -118,31 +128,32 @@ def generate_python_from_abstract_graph(question: str,
 
     from .codegen import _generate_python_from_abstract_graph
 
-    return _generate_python_from_abstract_graph(question=question, 
-                                                abstract_graph=abstract_graph, 
-                                                gee_datasets=gee_datasets, 
-                                                fix_code=fix_code)
-
-
+    return _generate_python_from_abstract_graph(
+        question=question,
+        abstract_graph=abstract_graph,
+        gee_datasets=gee_datasets,
+        fix_code=fix_code,
+    )
 
 
 @mcp.tool(
     description=(
         "Execute a given Google Earth Engine Python script and return the result. "
         "This tool does not generate or fix any code, it only executes the provided code "
-        "and returns the result or any error messages." 
-        "" 
+        "and returns the result or any error messages."
+        ""
         "The result is given as a json string dictionary with ONLY ONE of two possible keys 'result' "
         "and 'errors'. "
         "If the execution was successful, the 'result' key will contain the execution "
-        "If the execution failed, the 'errors' key will contain the error message." 
+        "If the execution failed, the 'errors' key will contain the error message."
         ""
     )
 )
 def execute_gee_python(code: str) -> str:
     """
-    Execute a given Google Earth Engine Python script and return the result. 
+    Execute a given Google Earth Engine Python script and return the result.
 
     """
     from .coderun import _execute_gee_python
+
     return _execute_gee_python(code)

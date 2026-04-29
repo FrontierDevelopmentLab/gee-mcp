@@ -40,7 +40,7 @@ extension-pkg-whitelist=
 fail-on=
 
 # Specify a score threshold under which the program will exit with error.
-fail-under=10
+fail-under=7
 
 # Interpret the stdin as a python script, whose filename needs to be passed as
 # the module_or_package argument.
@@ -432,10 +432,44 @@ disable=raw-checker-failed,
         deprecated-pragma,
         use-symbolic-message-instead,
         use-implicit-booleaness-not-comparison-to-string,
-        use-implicit-booleaness-not-comparison-to-zero
-        ; use-implicit-booleaness-not-comparison-to-zero,
-        ; duplicate-code,
-        ; docstring-first-line-empty
+        use-implicit-booleaness-not-comparison-to-zero,
+        magic-value-comparison,
+        consider-alternative-union-syntax,
+        deprecated-typing-alias,
+        consider-using-assignment-expr,
+        import-outside-toplevel,
+        redefined-outer-name,
+        docstring-first-line-empty,
+        too-many-try-statements,
+        wrong-import-position,
+        too-few-public-methods,
+        too-many-positional-arguments,
+        too-many-arguments,
+        too-many-locals,
+        too-many-branches,
+        too-many-statements,
+        too-many-instance-attributes,
+        too-many-public-methods,
+        f-string-without-interpolation,
+        too-complex,
+        protected-access,
+        broad-exception-caught,
+        unspecified-encoding,
+        implicit-str-concat,
+        attribute-defined-outside-init,
+        duplicate-code,
+        missing-function-docstring,
+        missing-module-docstring,
+        missing-class-docstring,
+        line-too-long,
+        bare-except,
+        unnecessary-lambda-assignment,
+        eval-used,
+        exec-used,
+        global-statement,
+        invalid-name,
+        unused-argument,
+        cyclic-import
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

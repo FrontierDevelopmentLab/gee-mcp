@@ -35,7 +35,9 @@ def extract_dataset_metadata(t: str):
         position = t.find(ti) - len(name)
         level = name.count("#")
         name = name.replace("\n", "").replace("#", "").strip()
-        r.append({"section": name, "header_level": level, "position": position})
+        r.append(
+            {"section": name, "header_level": level, "position": position}
+        )
 
     for i in range(len(r)):
         a = r[i]["position"]
@@ -65,9 +67,10 @@ def extract_dataset_metadata(t: str):
         )
         if m:
             dataset_availability = " ".join(m.groups()).strip()
-            availability_start_date, availability_end_date = (
-                dataset_availability.split("–")
-            )
+            (
+                availability_start_date,
+                availability_end_date,
+            ) = dataset_availability.split("–")
 
     cadence = None
     if "page summary" in r.section.str.lower().values:

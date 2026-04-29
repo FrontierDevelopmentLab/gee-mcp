@@ -14,7 +14,7 @@ Tools
 
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import ee
 
@@ -64,7 +64,8 @@ def download_satellite_image(
     tiles = _check_and_split_region(region, args.scale)
     if len(tiles) > 1:
         logging.info(
-            "Region is too large for a single download. " "Splitting into %d tiles.",
+            "Region is too large for a single download. "
+            "Splitting into %d tiles.",
             len(tiles),
         )
 
@@ -99,7 +100,9 @@ def download_satellite_image(
             )
             continue
 
-        collection = collection.sort("CLOUDY_PIXEL_PERCENTAGE").limit(args.image_count)
+        collection = collection.sort("CLOUDY_PIXEL_PERCENTAGE").limit(
+            args.image_count
+        )
 
         image_list = collection.toList(args.image_count)
         num_images_found = image_list.size().getInfo()
@@ -108,11 +111,15 @@ def download_satellite_image(
             image = ee.Image(image_list.get(j))
 
             date_string = (
-                ee.Date(image.get("system:time_start")).format("YYYYMMdd").getInfo()
+                ee.Date(image.get("system:time_start"))
+                .format("YYYYMMdd")
+                .getInfo()
             )
 
             if args.bands:
-                band_list = [b.strip() for b in args.bands.split(",") if b.strip()]
+                band_list = [
+                    b.strip() for b in args.bands.split(",") if b.strip()
+                ]
                 selected_bands = image.select(band_list)
             else:
                 selected_bands = image
@@ -124,7 +131,8 @@ def download_satellite_image(
             )
             if not file_paths:
                 logging.warning(
-                    "No files produced for tile %d, image %d " "after fallbacks.",
+                    "No files produced for tile %d, image %d "
+                    "after fallbacks.",
                     i + 1,
                     j + 1,
                 )
@@ -178,11 +186,15 @@ def _compute_index(
         # Two-band normalised difference indices
         if len(band_names) == 2:
             band_vals = list(band_names.values())
-            index_image = composite.normalizedDifference(band_vals).rename(name)
+            index_image = composite.normalizedDifference(band_vals).rename(
+                name
+            )
         else:
             # Multi-band indices (EVI, SAVI)
             band_map = {k: composite.select(v) for k, v in band_names.items()}
-            index_image = composite.expression(spec["formula"], band_map).rename(name)
+            index_image = composite.expression(
+                spec["formula"], band_map
+            ).rename(name)
         label = name
     else:
         # Custom expression
@@ -283,7 +295,9 @@ def _zonal_statistics(
             image = composite.normalizedDifference(band_vals).rename(name)
         else:
             band_map = {k: composite.select(v) for k, v in band_names.items()}
-            image = composite.expression(spec["formula"], band_map).rename(name)
+            image = composite.expression(spec["formula"], band_map).rename(
+                name
+            )
     elif args.bands:
         band_list = [b.strip() for b in args.bands.split(",") if b.strip()]
         image = composite.select(band_list)
@@ -308,7 +322,9 @@ def _zonal_statistics(
     combined = reducer_map[requested[0]]()
     for r_name in requested[1:]:
         if r_name in reducer_map:
-            combined = combined.combine(reducer_map[r_name](), sharedInputs=True)
+            combined = combined.combine(
+                reducer_map[r_name](), sharedInputs=True
+            )
 
     stats = image.reduceRegion(
         reducer=combined,
@@ -405,7 +421,9 @@ def _temporal_composite(
     return {
         "method": args.method,
         "files": files,
-        "message": (f"Created {args.method} composite " f"from {count} images."),
+        "message": (
+            f"Created {args.method} composite " f"from {count} images."
+        ),
         "image_count_in_collection": count,
     }
 
@@ -639,7 +657,9 @@ def _multi_period_analysis(
         # order varies).
         select_bands = args.band or args.bands
         if select_bands and not args.index_name and not args.expression:
-            band_list = [b.strip() for b in select_bands.split(",") if b.strip()]
+            band_list = [
+                b.strip() for b in select_bands.split(",") if b.strip()
+            ]
             collection = collection.select(band_list)
 
         if args.pixel_mask_band:
@@ -652,7 +672,10 @@ def _multi_period_analysis(
                 )
             )
 
-        if args.analysis == "threshold_area" and args.temporal_method == "daily_mean":
+        if (
+            args.analysis == "threshold_area"
+            and args.temporal_method == "daily_mean"
+        ):
             # Map threshold-area over individual images, average.
             op_name = args.operator
             band_name = select_bands or "custom_index"
@@ -683,7 +706,9 @@ def _multi_period_analysis(
 
             with_areas = collection.map(_compute_image_area)
             area_list = with_areas.aggregate_array("_daily_area")
-            mean_area_m2 = ee.List(area_list).reduce(ee.Reducer.mean()).getInfo() or 0.0
+            mean_area_m2 = (
+                ee.List(area_list).reduce(ee.Reducer.mean()).getInfo() or 0.0
+            )
             results.append(
                 {
                     "label": period.label,
@@ -806,20 +831,19 @@ def multi_period_analysis(
         "require factual verification. The extract aspects or issues would be presented to"
         "an Earth Observation expert for verification to increase the trustworthiness of the"
         "GEE Python code and its results."
-        "" 
+        ""
         "The response is a a list of json structures, each one describing a specific aspect"
         "identified  and containing the following fields: 'title', 'description', 'facts', "
         "and 'question_for_expert'."
-        ""        
+        ""
     )
 )
 def extract_factuality_issues(question: str, python_code: str) -> str:
-
     from .analysis import _extract_factuality_issues
 
-    return _extract_factuality_issues(question=question, python_code=python_code)
-
-
+    return _extract_factuality_issues(
+        question=question, python_code=python_code
+    )
 
 
 @mcp.tool(
@@ -849,7 +873,6 @@ async def assess_factuality_issue(
         issue_facts=issue_facts,
         issue_question_for_expert=issue_question_for_expert,
     )
-
 
 
 @mcp.tool(
@@ -891,16 +914,14 @@ async def assess_factuality_issue(
         """
     )
 )
-def get_datasets_locations_and_periods(question: str, 
-                                       gee_datasets: list[dict] = None
-                                       ) -> dict:
-    
+def get_datasets_locations_and_periods(
+    question: str, gee_datasets: list[dict] = None
+) -> dict:
     from . import analysis
 
-    return analysis._get_datasets_locations_and_periods(question=question,
-                                       gee_datasets=gee_datasets)    
-
-
+    return analysis._get_datasets_locations_and_periods(
+        question=question, gee_datasets=gee_datasets
+    )
 
 
 @mcp.tool(
@@ -922,14 +943,17 @@ def get_datasets_locations_and_periods(question: str,
         """
     )
 )
-def sensitivity_analysis(question: str,
-                          python_code: str, 
-                          baseline_answer: str) -> str:
+def sensitivity_analysis(
+    question: str, python_code: str, baseline_answer: str
+) -> str:
     from . import analysis
 
-    return analysis._sensitivity_analysis(question = question,
-                                          python_code = python_code,
-                                          baseline_answer = baseline_answer)
+    return analysis._sensitivity_analysis(
+        question=question,
+        python_code=python_code,
+        baseline_answer=baseline_answer,
+    )
+
 
 @mcp.tool(
     description=(
@@ -941,11 +965,13 @@ def sensitivity_analysis(question: str,
         """
     )
 )
-def identify_sensible_variables(question: str,
-                          python_code: str, 
-                          baseline_answer: str) -> str:
+def identify_sensible_variables(
+    question: str, python_code: str, baseline_answer: str
+) -> str:
     from . import analysis
 
-    return analysis._identify_sensible_variables(question = question,
-                                          python_code = python_code,
-                                          baseline_answer = baseline_answer)
+    return analysis._identify_sensible_variables(
+        question=question,
+        python_code=python_code,
+        baseline_answer=baseline_answer,
+    )

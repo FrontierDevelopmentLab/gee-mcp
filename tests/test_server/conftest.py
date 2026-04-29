@@ -1,7 +1,6 @@
 """Pytest fixtures for the gee_mcp server test suite."""
 
 import os
-import sys
 
 # Ensure GEE auth is skipped before any gee_mcp import in subordinate
 # fixtures.

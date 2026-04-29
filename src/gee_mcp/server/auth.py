@@ -128,7 +128,9 @@ def setup_gee(key_path: str | None = None) -> None:
 
     # --- Level 4: interactive auth --------------------------------------
     auth_mode = os.getenv("GEE_AUTH_MODE", "gcloud")
-    logger.debug("GEE auth [4/4]: trying interactive auth (mode=%s)", auth_mode)
+    logger.debug(
+        "GEE auth [4/4]: trying interactive auth (mode=%s)", auth_mode
+    )
     try:
         ee.Authenticate(auth_mode=auth_mode)
         ee.Initialize(project=gee_project)

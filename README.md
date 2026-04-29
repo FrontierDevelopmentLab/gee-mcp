@@ -205,6 +205,10 @@ Run just the tests:
 poetry run pytest
 ```
 
+## Acknowledgements
+
+Originally created by [Raúl Ramos](https://github.com/rramosp).
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
