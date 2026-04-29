@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gee-mcp"
-version = "0.0.1"
+version = "1.0.0"
 description = "MCP server for Google Earth Engine"
 authors = [
   "rramosp",
@@ -12,7 +12,7 @@ license = "MIT"
 keywords = ["mcp", "earth-engine", "gee", "earth-observation"]
 
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
   "Intended Audience :: Science/Research",
   "Topic :: Scientific/Engineering :: GIS",
@@ -23,6 +23,10 @@ classifiers = [
   "Programming Language :: Python :: 3.14",
   "Programming Language :: Python :: 3 :: Only",
 ]
+
+[tool.poetry.urls]
+Repository = "https://github.com/FrontierDevelopmentLab/gee-mcp"
+Issues = "https://github.com/FrontierDevelopmentLab/gee-mcp/issues"
 
 
 [tool.poetry.dependencies]

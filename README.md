@@ -9,10 +9,6 @@ An [MCP](https://modelcontextprotocol.io/) server that exposes
 of MCP tools — dataset discovery, metadata extraction, analysis
 primitives, and AI-assisted GEE Python code generation.
 
-> **Status: alpha (v0.0.1) — work in progress.** APIs, tool names, and
-> wire formats may change without notice. Not yet recommended for
-> production use.
-
 ## Tools
 
 The server registers the following MCP tools, grouped by purpose.
