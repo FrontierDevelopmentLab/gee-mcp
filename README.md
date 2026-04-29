@@ -117,7 +117,10 @@ Either set an API key:
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `GEMINI_API_KEY` or `GOOGLE_API_KEY` | yes (one of the two) | Gemini API key |
+| `GEMINI_API_KEY` | yes | Gemini API key |
+
+`GOOGLE_API_KEY` is also accepted as a fallback for compatibility
+with Google's official SDK convention.
 
 …or use a Vertex AI project (after running `gcloud auth
 application-default login`):
