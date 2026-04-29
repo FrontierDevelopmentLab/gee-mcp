@@ -111,7 +111,9 @@ Supported Python versions: 3.11–3.14.
 ## Configuration
 
 You need to configure access to **Gemini** and to **Google Earth
-Engine** via environment variables.
+Engine** via environment variables. Copy [`.env.example`](.env.example)
+to `.env` and fill in the values; `python-dotenv` is loaded on server
+startup.
 
 ### Gemini
 
