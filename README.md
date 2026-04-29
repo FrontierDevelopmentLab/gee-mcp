@@ -6,7 +6,7 @@
 
 An [MCP](https://modelcontextprotocol.io/) server that exposes
 [Google Earth Engine](https://earthengine.google.com/) (GEE) as a set
-of MCP tools — dataset discovery, metadata extraction, analysis
+of MCP tools covering dataset discovery, metadata extraction, analysis
 primitives, and AI-assisted GEE Python code generation.
 
 ## Tools
@@ -14,53 +14,53 @@ primitives, and AI-assisted GEE Python code generation.
 The server registers the following MCP tools, grouped by purpose.
 
 ### Catalogue & Metadata
-- `list_datasets` — list all available Google Earth Engine datasets.
-- `get_dataset_info` — get detailed Markdown information about a GEE
+- `list_datasets`: list all available Google Earth Engine datasets.
+- `get_dataset_info`: get detailed Markdown information about a GEE
   dataset.
-- `get_dataset_metadata` — get structured STAC metadata (bands,
+- `get_dataset_metadata`: get structured STAC metadata (bands,
   temporal interval, etc.) for a dataset.
-- `check_imagery_availability` — check imagery availability for a
+- `check_imagery_availability`: check imagery availability for a
   dataset within a date range and optional bounding box.
-- `extract_metadata` — extract structured metadata (bands, pixel
+- `extract_metadata`: extract structured metadata (bands, pixel
   size, availability, cadence) from a dataset page.
-- `analyze_metadata` — use Gemini to analyse a dataset description
+- `analyze_metadata`: use Gemini to analyse a dataset description
   and extract structured metadata.
 
 ### Analysis & Data Processing
-- `download_satellite_image` — download satellite images from GEE.
-- `compute_index` — compute a spectral index (NDVI, NDWI, …) or a
+- `download_satellite_image`: download satellite images from GEE.
+- `compute_index`: compute a spectral index (NDVI, NDWI, …) or a
   custom band-math expression over a region.
-- `zonal_statistics` — compute summary statistics (mean, median,
+- `zonal_statistics`: compute summary statistics (mean, median,
   min, …) for bands or an index within a region.
-- `temporal_composite` — create cloud-free temporal composites
+- `temporal_composite`: create cloud-free temporal composites
   (median, mosaic, greenest, most recent).
-- `mask_by_raster` — apply a value-range mask (DEM, land cover, …)
+- `mask_by_raster`: apply a value-range mask (DEM, land cover, …)
   to imagery and compute statistics.
-- `threshold_area` — compute the area of pixels meeting a threshold
+- `threshold_area`: compute the area of pixels meeting a threshold
   condition on a band, index, or expression.
-- `multi_period_analysis` — run the same analysis across multiple
+- `multi_period_analysis`: run the same analysis across multiple
   date ranges for temporal comparisons.
-- `execute_gee_python` — execute a provided GEE Python script and
+- `execute_gee_python`: execute a provided GEE Python script and
   return the result.
 
 ### AI Code Generation & Validation
-- `generate_python_from_question` — answer an Earth Observation
+- `generate_python_from_question`: answer an Earth Observation
   question by generating GEE Python code with iterative error fixing.
-- `generate_abstract_graph_from_question` — generate an abstract
+- `generate_abstract_graph_from_question`: generate an abstract
   Mermaid graph describing an EO pipeline that solves a question.
-- `generate_python_from_reasoning_steps` — generate GEE Python code
+- `generate_python_from_reasoning_steps`: generate GEE Python code
   from a provided set of reasoning steps.
-- `generate_python_from_abstract_graph` — generate GEE Python code
+- `generate_python_from_abstract_graph`: generate GEE Python code
   from a provided Mermaid graph.
-- `get_datasets_locations_and_periods` — determine the GEE datasets,
+- `get_datasets_locations_and_periods`: determine the GEE datasets,
   time periods, and AOIs required to answer a question.
-- `extract_factuality_issues` — analyse a GEE Python script and
+- `extract_factuality_issues`: analyse a GEE Python script and
   surface scientific assumptions worth verifying.
-- `assess_factuality_issue` — produce an expert-style assessment of
+- `assess_factuality_issue`: produce an expert-style assessment of
   a factuality issue, with optional code-fix recommendations.
-- `identify_sensible_variables` — identify variables and constants
+- `identify_sensible_variables`: identify variables and constants
   in the code whose values might affect the final result.
-- `sensitivity_analysis` — perform sensitivity analysis by tweaking
+- `sensitivity_analysis`: perform sensitivity analysis by tweaking
   variable values and plotting the impact on the final result.
 
 ## Example tool invocation
@@ -82,10 +82,10 @@ A JSON-RPC call to `generate_python_from_question` looks like:
 
 The response includes:
 
-- `python_code` — the generated GEE Python code,
-- `python_code_explanation` — an explanation of the code,
-- `python_code_fix_history` — the iterative fixes attempted,
-- `python_code_result` — the result of executing the code.
+- `python_code`: the generated GEE Python code,
+- `python_code_explanation`: an explanation of the code,
+- `python_code_fix_history`: the iterative fixes attempted,
+- `python_code_result`: the result of executing the code.
 
 The generated code defines `gee_main()` returning `(result_xml, Map)`,
 where `result_xml` follows a `<RESULT><VARIABLE_NAME>...
@@ -124,7 +124,7 @@ application-default login`):
 
 | Variable | Required | Default | Purpose |
 | --- | --- | --- | --- |
-| `VERTEXAI_PROJECT` | yes | — | GCP project ID for Vertex AI |
+| `VERTEXAI_PROJECT` | yes |  | GCP project ID for Vertex AI |
 | `VERTEXAI_LOCATION` | no | `global` | GCP region for Vertex AI |
 
 ### Google Earth Engine
@@ -206,7 +206,7 @@ Originally created by [Raúl Ramos](https://github.com/rramosp).
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT licensed. See [LICENSE](LICENSE) for the full text.
 
 ## Copyright
 
