@@ -211,3 +211,7 @@ Originally created by [Raúl Ramos](https://github.com/rramosp).
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+## Copyright
+
+© 2026 Trillium Technologies Ltd.
