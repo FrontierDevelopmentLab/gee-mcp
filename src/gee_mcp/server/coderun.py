@@ -1,6 +1,5 @@
 import json
 
-import ee
 from loguru import logger
 
 from .genai import init_genai_client
@@ -8,22 +7,8 @@ from .helpers import extract_xml_tag
 
 
 class GEEPythonExecution:
-    def __init__(self, genai_client=None, ee_project=None):
-        if genai_client is None:
-            self.genai_client = init_genai_client()
-        else:
-            self.genai_client = genai_client
-
-        self.ee_project = ee_project
-
-        if ee_project is not None:
-            ee.Authenticate()
-            ee.Initialize(project=ee_project)
-            logger.debug("initialized Earth Engine API")
-        else:
-            logger.debug(
-                "no Earth Engine project provided, assuming API is already initialized"
-            )
+    def __init__(self, genai_client=None):
+        self.genai_client = genai_client or init_genai_client()
 
     def exec(self, code):
         namespace: dict = {}
