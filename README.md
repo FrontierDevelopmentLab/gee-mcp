@@ -136,17 +136,14 @@ application-default login`):
 | Variable | Required | Purpose |
 | --- | --- | --- |
 | `GEE_PROJECT` | yes | GEE project ID |
-| `GEE_KEY_PATH` | no | Path to a service-account JSON key file |
-| `GEE_SERVICE_ACCOUNT` / `EE_SERVICE_ACCOUNT` | no | Service-account email |
-| `GEE_PRIVATE_KEY_PATH` / `GOOGLE_APPLICATION_CREDENTIALS` | no | Path to private key |
-| `GEE_AUTH_MODE` | no | Auth mode for `ee.Authenticate` (default `gcloud`) |
-| `GEE_SKIP_AUTH` | no | Set to `1` to skip auth entirely (used by the test suite) |
+| `GOOGLE_APPLICATION_CREDENTIALS` | no | Path to a service-account JSON key file. Only needed if you have not authenticated via `earthengine authenticate` or `gcloud`. |
+| `GEE_SKIP_AUTH` | no | Set to `1` to skip auth entirely (used by the test suite). |
 
-The auth chain tries, in order: explicit key file (param or
-`GEE_KEY_PATH`), env-var service account, default user credentials,
-then interactive `ee.Authenticate`. You typically just need
-`GEE_PROJECT` after running `earthengine authenticate` or `gcloud auth
-application-default login`.
+Authentication is delegated to `ee.Initialize`, which walks the
+standard Google Cloud credential chain. Either run `earthengine
+authenticate` (interactive, once per machine) or set
+`GOOGLE_APPLICATION_CREDENTIALS` to a service-account key path. On
+GCE / Cloud Run, instance metadata is picked up automatically.
 
 ## Running the server
 
