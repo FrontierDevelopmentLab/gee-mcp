@@ -1,0 +1,69 @@
+repos:
+  - repo: local
+    hooks:
+    - id: detect-secrets
+      name: Detect secrets
+      language: system
+      entry: poetry run detect-secrets-hook
+      args: ['--baseline', '.secrets.baseline']
+      exclude: '\.ipynb$'
+    - id: autoflake
+      name: autoflake
+      language: system
+      "types": [python]
+      require_serial: true
+      entry: poetry run autoflake
+      args:
+        - "--in-place"
+        - "--remove-unused-variables"
+        - "--recursive"
+    - id: black
+      name: black
+      entry: poetry run black .
+      language: system
+      types: [python]
+    - id: isort
+      name: isort
+      entry: poetry run isort .
+      language: system
+      exclude: |
+        (?x)^(
+            .+\.js$|
+            .+\.jsx$|
+            .+\.css$|
+            .+\.html$|
+            .+\.json$|
+            .+\.md$
+        )$
+    - id: mypy
+      name: mypy
+      entry: poetry run mypy src tests
+      pass_filenames: false
+      language: system
+      args:
+        - "--ignore-missing-imports"
+        - "--warn-unused-ignores"
+    - id: pylint
+      name: pylint
+      entry: poetry run pylint src tests
+      pass_filenames: false
+      language: system
+      args:
+        - "--enable-useless-suppression"
+    - id: pytest-with-coverage
+      name: Run pytest with coverage
+      entry: poetry run coverage run -m pytest --testdox tests
+      language: system
+      pass_filenames: false
+      always_run: true
+    - id: coverage-report
+      name: Coverage report
+      entry: poetry run coverage report
+      language: system
+      pass_filenames: false
+      verbose: true
+      args:
+        - "--fail-under=50"
+        - "--skip-empty"
+        - "--skip-covered"
+        - "--show-missing"

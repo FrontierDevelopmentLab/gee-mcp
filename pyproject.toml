@@ -1,0 +1,127 @@
+[tool.poetry]
+name = "gee-mcp"
+version = "0.0.1"
+description = "MCP server for Google Earth Engine"
+authors = [
+  "rramosp",
+  "will-fawcett-trillium"
+]
+readme = "README.md"
+packages = [{include = "gee_mcp", from = "src"}]
+license = "MIT"
+keywords = ["mcp", "earth-engine", "gee", "earth-observation"]
+
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: GIS",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3 :: Only",
+]
+
+
+[tool.poetry.dependencies]
+python = "^3.11"
+mcp = "^1.26.0"
+fastmcp = "^3.1.0"
+earthengine-api = ">=1.0.0"
+requests = "^2.31"
+beautifulsoup4 = "^4.12"
+markitdown = "*"
+loguru = "^0.7"
+pandas = "*"
+numpy = "*"
+mermaid-py = "*"
+python-dotenv = "^1.0"
+google-genai = "*"
+pydantic = "^2.0"
+
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^4.5.1"
+autoflake = "^2.2.1"
+isort = "^5.13.2"
+black = "^23.3.0"
+mypy = "^1.8.0"
+pylint = "^3.2.0"
+coverage = "^7.4.1"
+pytest = ">=8.0.0"
+pytest-asyncio = ">=0.23.0"
+pytest-cov = ">=4.0.0"
+pytest-testdox = "^3.1.0"
+pytest-mock = "^3.14.0"
+detect-secrets = "^1.5.0"
+pytest-env = "^1.1.5"
+pylint-per-file-ignores = "^3.2.0"
+
+[tool.black]
+line-length = 79
+target-version = ['py311', 'py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  | blib2to3
+  | tests/data
+  | profiling
+  | \.git
+  | __pycache__
+  | \.tox
+  | \venv
+  | \.venv
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 79
+skip_glob = [
+  '*.parquet',
+]
+filter_files = true
+skip_gitignore = true
+
+[tool.mypy]
+exclude = [
+  '\.yaml$',
+  '\.yml$',
+  '\.toml$',
+  '\.venv',
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "src"
+]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+addopts = "-v --tb=short --basetemp=/tmp/pytest"
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["tests/**/conftest.py", "tests/*"]
+data_file = "/tmp/gee_mcp/.coverage"
+
+[tool.coverage.report]
+exclude_also = [
+    "def __repr__",
+    "if self\\.debug",
+    "if DEBUG_PRINT:",
+    "if DEBUG_PRINTS:",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "@(abc\\.)?abstractmethod",
+    ]
+ignore_errors = true
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

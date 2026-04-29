@@ -824,17 +824,31 @@ def extract_factuality_issues(question: str, python_code: str) -> str:
 
 @mcp.tool(
     description=(
-        "makes an assessment of a factuality issue identified in a Google Earth Engine Python"
-        "that attemps to answer an Earth Observation Question." \
-        "" \
-        "The answer includes a textual assessment, as well as possibly suggestions to update" \
-        "the Google Earth Engine Python code to improve the reliability of the answer"         
+        "Make an assessment of a factuality issue identified in a Google "
+        "Earth Engine Python script that attempts to answer an Earth "
+        "Observation question. The answer includes a textual assessment, "
+        "as well as possible suggestions to update the GEE Python code "
+        "to improve the reliability of the answer."
     )
 )
-def _assess_factuality_issue(question: str, python_code: str) -> str:
+async def assess_factuality_issue(
+    question: str,
+    python_code: str,
+    issue_title: str,
+    issue_description: str,
+    issue_facts: str,
+    issue_question_for_expert: str,
+) -> str:
     from .analysis import _assess_factuality_issue
-    r = _assess_factuality_issue(question=question, python_code=python_code)
-    return r
+
+    return await _assess_factuality_issue(
+        question=question,
+        python_code=python_code,
+        issue_title=issue_title,
+        issue_description=issue_description,
+        issue_facts=issue_facts,
+        issue_question_for_expert=issue_question_for_expert,
+    )
 
 
 

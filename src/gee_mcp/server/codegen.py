@@ -33,7 +33,7 @@ class QuestionRecord:
             del(q['explanation'])
 
         if 'thinking' in q.keys():
-            q['thiking_python'] = q['thinking']
+            q['thinking_python'] = q['thinking']
             del(q['thinking'])
 
         dataset_dir = '/'.join(question_file.split('/')[:-1])
@@ -552,7 +552,7 @@ class GeoQuestion:
 
         self.qr['abstract_graph_derived'] = {
             'python_code': c,
-            'ptyhon_code_thinking': r['thought'],
+            'python_code_thinking': r['thought'],
             'python_code_explanation': e,
             'python_code_remarks': self.remarks_for_prompts,
             'python_code_status': 'not_run'
@@ -584,7 +584,7 @@ class GeoQuestion:
 
         self.qr['reasoning_steps_derived'] = {
             'python_code': c,
-            'ptyhon_code_thinking': r['thought'],
+            'python_code_thinking': r['thought'],
             'python_code_explanation': e,
             'python_code_remarks': self.remarks_for_prompts,
             'python_code_status': 'not_run'

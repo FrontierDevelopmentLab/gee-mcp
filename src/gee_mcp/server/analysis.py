@@ -562,46 +562,7 @@ def _identify_sensible_variables(question: str,
     result = [i.to_json() for _m,i in rs.input_variables.iterrows()]
     return result
 
-def _extract_factuality_issues(question: str, python_code: str) -> str:
-
-    from .genai import init_genai_client
-
-    genai_client = init_genai_client()
-
-    prompt = f"""
-    You are a helpful assistant for Earth Observation data analysis with Google Earth Engine.
-    The Python code below was devised to answer the following question
-
-    <QUESTION>
-    {question}
-    </QUESTION>
-
-    Your task is to analyze the Google Earth Engine Python code below and extract what aspects 
-    or issues are making scientific or data assumptions either explicitly or implicitly and might require 
-    factual verification.
-
-    <PYTHON_CODE>
-    {python_code}
-    </PYTHON CODE>
-
-    Your response must be a list of json structures, each one describing a specific aspect you identify
-    and containing the following fields:
-    [ 
-    {{"title": "A short title describing the aspect or assumption",
-      "description": "A detailed description of the aspect or assumption, why it might require factual verification",
-      "facts": "Data, information, constants or facts to be verified",
-      "question_for_expert": "The question that should be posed to an expert to verify the aspect or assumption"
-    }}
-    {{ ... more issues ...}}
-    ]
-
-    """
-    logger.info('calling genai to extract factuality issues')
-    r = genai_client.call(prompt)
-    return extract_tag(r['answer'], 'json')
-
-
-async def _assess_factuality_issue(question: str, 
+async def _assess_factuality_issue(question: str,
                                    python_code: str,
                                    issue_title: str,
                                    issue_description: str,
@@ -662,4 +623,3 @@ async def _assess_factuality_issue(question: str,
     r['answer'] = r['answer'].replace(code_recommendations, '')
     r.update({'code_recommendations': code_recommendations})
     return json.dumps(r)
-~

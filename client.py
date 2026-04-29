@@ -9,10 +9,11 @@ from typing import Any
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-import sys
-PYTHON_BIN = sys.executable
-SERVER_MODULE = "server"
 import os
+import sys
+
+PYTHON_BIN = sys.executable
+SERVER_MODULE = "gee_mcp.server"
 
 class GEEToolError(RuntimeError):
     """Raised when the MCP server returns an error for a tool call."""
@@ -32,10 +33,20 @@ class GEEMCPClient:
         self._cm_session: object = None
 
     async def __aenter__(self) -> GEEMCPClient:
+        # Prepend the local ``src/`` directory to PYTHONPATH so the
+        # example client can launch the server straight from a
+        # checkout (without installing the package first).
+        repo_src = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "src"
+        )
+        existing = os.environ.get("PYTHONPATH", "")
+        pythonpath = (
+            f"{repo_src}{os.pathsep}{existing}" if existing else repo_src
+        )
         params = StdioServerParameters(
             command=PYTHON_BIN,
             args=["-m", SERVER_MODULE],
-            env={**os.environ, "PYTHONPATH": os.path.dirname(os.path.abspath(__file__))},
+            env={**os.environ, "PYTHONPATH": pythonpath},
         )
         self._cm_stdio = stdio_client(params)
         read, write = await self._cm_stdio.__aenter__()  # type: ignore[union-attr]
@@ -74,8 +85,8 @@ class GEEMCPClient:
             return text
 
 
-    async def test(self) -> str:
-        return {'test': 'uno'}
+    async def test(self) -> dict:
+        return {"test": "uno"}
 
 
     async def get_metadata(self, catalog_id: str) -> dict:

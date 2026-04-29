@@ -1,49 +1,75 @@
-# GEE MCP Server
+# GEE MCP
 
-This is a standalone Model Context Protocol (MCP) server for Google Earth Engine (GEE). It provides tools for dataset discovery, metadata extraction, and executing GEE Python code.
+[![CI](https://github.com/FrontierDevelopmentLab/gee-mcp/actions/workflows/main.yml/badge.svg)](https://github.com/FrontierDevelopmentLab/gee-mcp/actions/workflows/main.yml)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)](https://github.com/FrontierDevelopmentLab/gee-mcp)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-## Project Structure
+An [MCP](https://modelcontextprotocol.io/) server that exposes
+[Google Earth Engine](https://earthengine.google.com/) (GEE) as a set
+of MCP tools — dataset discovery, metadata extraction, analysis
+primitives, and AI-assisted GEE Python code generation.
 
-- `server/`: The MCP server package.
-- `client.py`: An example MCP client to test the server.
-- `requirements.txt`: List of dependencies.
+> **Status: alpha (v0.0.1) — work in progress.** APIs, tool names, and
+> wire formats may change without notice. Not yet recommended for
+> production use.
 
-## Available Tools
+## Tools
 
-The server exposes several Model Context Protocol (MCP) tools categorised by their function:
+The server registers the following MCP tools, grouped by purpose.
 
 ### Catalogue & Metadata
-- `list_datasets`: List all available Google Earth Engine datasets.
-- `get_dataset_info`: Get detailed Markdown information about a specific GEE dataset.
-- `get_dataset_metadata`: Get structured STAC metadata (bands, temporal interval, etc.) for a dataset.
-- `check_imagery_availability`: Check imagery availability for a dataset within a date range and optional bounding box.
-- `extract_metadata`: Extract structured metadata (bands, pixel size, availability, cadence) from a dataset page.
-- `analyze_metadata`: Use Gemini AI to analyse a dataset description and extract structured metadata.
+- `list_datasets` — list all available Google Earth Engine datasets.
+- `get_dataset_info` — get detailed Markdown information about a GEE
+  dataset.
+- `get_dataset_metadata` — get structured STAC metadata (bands,
+  temporal interval, etc.) for a dataset.
+- `check_imagery_availability` — check imagery availability for a
+  dataset within a date range and optional bounding box.
+- `extract_metadata` — extract structured metadata (bands, pixel
+  size, availability, cadence) from a dataset page.
+- `analyze_metadata` — use Gemini to analyse a dataset description
+  and extract structured metadata.
 
 ### Analysis & Data Processing
-- `download_satellite_image`: Download satellite images from GEE.
-- `compute_index`: Compute a spectral index (e.g., NDVI, NDWI) or custom band math expression over a region.
-- `zonal_statistics`: Compute summary statistics (mean, median, min, etc.) for bands or an index within a region.
-- `temporal_composite`: Create cloud-free temporal composites (median, mosaic, greenest, etc.).
-- `mask_by_raster`: Apply a value-range mask (e.g., DEM, land cover) to imagery and compute statistics.
-- `threshold_area`: Compute the area of pixels meeting a threshold condition on a band, index, or expression.
-- `multi_period_analysis`: Run the same analysis across multiple date ranges for temporal comparisons.
-- `execute_gee_python`: Execute a provided GEE Python script and return the result.
+- `download_satellite_image` — download satellite images from GEE.
+- `compute_index` — compute a spectral index (NDVI, NDWI, …) or a
+  custom band-math expression over a region.
+- `zonal_statistics` — compute summary statistics (mean, median,
+  min, …) for bands or an index within a region.
+- `temporal_composite` — create cloud-free temporal composites
+  (median, mosaic, greenest, most recent).
+- `mask_by_raster` — apply a value-range mask (DEM, land cover, …)
+  to imagery and compute statistics.
+- `threshold_area` — compute the area of pixels meeting a threshold
+  condition on a band, index, or expression.
+- `multi_period_analysis` — run the same analysis across multiple
+  date ranges for temporal comparisons.
+- `execute_gee_python` — execute a provided GEE Python script and
+  return the result.
 
 ### AI Code Generation & Validation
-- `generate_python_from_question`: Answer an Earth Observation question by generating GEE Python code with iterative error fixing.
-- `generate_abstract_graph_from_question`: Generate an abstract graph (Mermaid) describing an EO pipeline to solve a question.
-- `generate_python_from_reasoning_steps`: Generate GEE Python code based on a provided set of reasoning steps.
-- `generate_python_from_abstract_graph`: Generate GEE Python code based on a provided Mermaid graph.
-- `get_datasets_locations_and_periods`: Determine the GEE datasets, time periods, and AOIs required to answer a given question.
-- `extract_factuality_issues`: Analyze GEE Python script and extract data/scientific assumptions that might require factual verification.
-- `assess_factuality_issue`: Assess one of the factuality issies extracted in the previous function call, and generate recommendations and code change suggestions.
-- `identify_sensible_variables`: Identify variables and constants in the GEE Python code whose values might impact the final result.
-- `sensitivity_analysis`: Perform sensitivity analysis by tweaking variable values in the code and plotting the impacts on the final result.
+- `generate_python_from_question` — answer an Earth Observation
+  question by generating GEE Python code with iterative error fixing.
+- `generate_abstract_graph_from_question` — generate an abstract
+  Mermaid graph describing an EO pipeline that solves a question.
+- `generate_python_from_reasoning_steps` — generate GEE Python code
+  from a provided set of reasoning steps.
+- `generate_python_from_abstract_graph` — generate GEE Python code
+  from a provided Mermaid graph.
+- `get_datasets_locations_and_periods` — determine the GEE datasets,
+  time periods, and AOIs required to answer a question.
+- `extract_factuality_issues` — analyse a GEE Python script and
+  surface scientific assumptions worth verifying.
+- `assess_factuality_issue` — produce an expert-style assessment of
+  a factuality issue, with optional code-fix recommendations.
+- `identify_sensible_variables` — identify variables and constants
+  in the code whose values might affect the final result.
+- `sensitivity_analysis` — perform sensitivity analysis by tweaking
+  variable values and plotting the impact on the final result.
 
-## Example Tool Invocation
+## Example tool invocation
 
-Here is an example of how an MCP client might format a JSON-RPC request to invoke the `generate_python_from_question` tool:
+A JSON-RPC call to `generate_python_from_question` looks like:
 
 ```json
 {
@@ -58,157 +84,127 @@ Here is an example of how an MCP client might format a JSON-RPC request to invok
 }
 ```
 
-It returns a json structure with several objects, most notably 
+The response includes:
 
-- `python_code`: the actual GEE Python code generated
-- `python_code_explanation`: an explanation of the code generated
-- `python_code_fix_history`: the iterative fixes made to the code
-- `python_code_result`: the result after executing the code
+- `python_code` — the generated GEE Python code,
+- `python_code_explanation` — an explanation of the code,
+- `python_code_fix_history` — the iterative fixes attempted,
+- `python_code_result` — the result of executing the code.
 
-This is the code generated
-
-```python
-import ee
-import geemap
-
-def gee_main():
-    # Define a point within the Amazon basin (near Manaus, Brazil) to intersect the basin polygon
-    amazon_point = ee.Geometry.Point([-60.0, -3.0])
-    
-    # Load the WWF HydroATLAS Level 3 Basins dataset
-    # We use level 3 which contains the major continental basins like the Amazon
-    basins = ee.FeatureCollection('WWF/HydroATLAS/v1/Basins/level03')
-    amazon_basin = basins.filterBounds(amazon_point)
-    
-    # Load MODIS monthly NDVI data for the year 2023
-    modis_ndvi = ee.ImageCollection('MODIS/061/MOD13A3') \
-        .filterDate('2023-01-01', '2024-01-01') \
-        .select('NDVI')
-    
-    # Calculate the mean NDVI image over the year and apply the scaling factor of 0.0001
-    mean_ndvi_image = modis_ndvi.mean().multiply(0.0001)
-    
-    # Calculate the average NDVI over the entire Amazon basin
-    stats = mean_ndvi_image.reduceRegion(
-        reducer=ee.Reducer.mean(),
-        geometry=amazon_basin.geometry(),
-        scale=1000, # Matches the 1km resolution of MOD13A3
-        maxPixels=1e12
-    )
-    
-    # Extract the average NDVI value
-    avg_ndvi = stats.get('NDVI').getInfo()
-    
-    # Initialize a geemap Map for visualization
-    Map = geemap.Map()
-    Map.centerObject(amazon_basin, 4)
-    
-    # Define NDVI visualization parameters
-    ndvi_vis = {
-        'min': 0.0,
-        'max': 1.0,
-        'palette': [
-            'FFFFFF', 'CE7E45', 'DF923D', 'F1B555', 'FCD163', '99B718', '74A901',
-            '66A000', '529400', '3E8601', '207401', '056201', '004C00', '023B01',
-            '012E01', '011D01', '011301'
-        ]
-    }
-    
-    # Add the layers to the map
-    Map.addLayer(amazon_basin.style(**{'fillColor': '00000000', 'color': 'FF0000'}), {}, 'Amazon Basin Boundary')
-    Map.addLayer(mean_ndvi_image.clip(amazon_basin), ndvi_vis, 'Mean NDVI 2023')
-    
-    # Format the result as an XML string
-    result_xml = f"""<RESULT>
-<VARIABLE_NAME>average_ndvi</VARIABLE_NAME>
-<VALUE>{avg_ndvi}</VALUE>
-<UNITS>dimensionless</UNITS>
-</RESULT>"""
-    
-    return result_xml, Map
-  ```
-
-and this is the result when running the generated code (also done by the tool call itself)
-
-```xml
-<RESULT>
-<VARIABLE_NAME>average_ndvi</VARIABLE_NAME>
-<VALUE>0.7712281332887203</VALUE>
-<UNITS>dimensionless</UNITS>
-</RESULT>
-```
-
-Observe that the generated code also returns a `Map` object so that it can be displayed in appropriate environments, such as IPython Notebookes. For instance, for this question
-
-_Characterize the morphometry and land cover of the Emme catchment in the Canton of Bern by determining its total area, maximum elevation, and forest cover percentage. Additionally, state the financial magnitude of the damages caused by the flash flood event in this catchment (specifically in Schangnau) during July 2014._
-
-the generated code returns the following answer and map:
-
-![map](imgs/gee-execution.png) 
-
-## Integration
-
-As any other MCP server GEE MCP can be integrated in any agentic tool. For instance in Gemini-CLI
-
-![geminicli](imgs/geminicli.png) 
-
+The generated code defines `gee_main()` returning `(result_xml, Map)`,
+where `result_xml` follows a `<RESULT><VARIABLE_NAME>...
+</VARIABLE_NAME><VALUE>...</VALUE><UNITS>...</UNITS></RESULT>` shape,
+and `Map` is a `geemap.Map` for notebook display.
 
 ## Installation
 
-Install dependencies:
+The project uses [Poetry](https://python-poetry.org/).
 
 ```bash
-pip install -r requirements.txt
+git clone https://github.com/FrontierDevelopmentLab/gee-mcp.git
+cd gee-mcp
+poetry install
 ```
 
-Ensure you have authenticated with Google Earth Engine and your environment is set up.
+Supported Python versions: 3.11–3.14.
 
-## Environment Variables
+## Configuration
 
-You need to set up access to Gemini (via an api key or a vertex ai project) and to Google Earth Engine.
+You need to configure access to **Gemini** and to **Google Earth
+Engine** via environment variables.
 
-### Access to Gemini
+### Gemini
 
-You must set up either
+Either set an API key:
 
-- `GEMINI_API_KEY` or `GOOGLE_API_KEY`: for the Gemini API key
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `GEMINI_API_KEY` or `GOOGLE_API_KEY` | yes (one of the two) | Gemini API key |
 
-or, for a Vertex AI project
+…or use a Vertex AI project (after running `gcloud auth
+application-default login`):
 
-- `VERTEXAI_PROJECT` (optional): The GCP project ID for Vertex AI (used if no API key is provided).
-- `VERTEXAI_LOCATION` (optional): The GCP region for Vertex AI (defaults to `"global"`).
+| Variable | Required | Default | Purpose |
+| --- | --- | --- | --- |
+| `VERTEXAI_PROJECT` | yes | — | GCP project ID for Vertex AI |
+| `VERTEXAI_LOCATION` | no | `global` | GCP region for Vertex AI |
 
-assuming you have authenticated within that project via
+### Google Earth Engine
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `GEE_PROJECT` | yes | GEE project ID |
+| `GEE_KEY_PATH` | no | Path to a service-account JSON key file |
+| `GEE_SERVICE_ACCOUNT` / `EE_SERVICE_ACCOUNT` | no | Service-account email |
+| `GEE_PRIVATE_KEY_PATH` / `GOOGLE_APPLICATION_CREDENTIALS` | no | Path to private key |
+| `GEE_AUTH_MODE` | no | Auth mode for `ee.Authenticate` (default `gcloud`) |
+| `GEE_SKIP_AUTH` | no | Set to `1` to skip auth entirely (used by the test suite) |
+
+The auth chain tries, in order: explicit key file (param or
+`GEE_KEY_PATH`), env-var service account, default user credentials,
+then interactive `ee.Authenticate`. You typically just need
+`GEE_PROJECT` after running `earthengine authenticate` or `gcloud auth
+application-default login`.
+
+## Running the server
+
+Over stdio (the standard MCP transport):
 
 ```bash
-gcloud auth application-default login
+poetry run python -m gee_mcp.server
 ```
 
-### Access to Google Earth Engine
+## Testing with the example client
 
-You must set
-
-- `GEE_PROJECT`: The GEE project id (required by `auth.py`).
-
-
-having previously authenticated via
+The repo includes `client.py`, an example MCP client that launches
+the server as a subprocess.
 
 ```bash
-earthengine authenticate
+poetry run python client.py
 ```
 
-## Running the Server
+See `example.ipynb` for a notebook walk-through.
 
-You can run the server via stdio (as a module):
+## Integration
+
+GEE MCP can be plugged into any MCP-aware agent. For example, in
+Gemini-CLI:
+
+![geminicli](imgs/geminicli.png)
+
+For the question:
+
+> Characterize the morphometry and land cover of the Emme catchment
+> in the Canton of Bern by determining its total area, maximum
+> elevation, and forest cover percentage. Additionally, state the
+> financial magnitude of the damages caused by the flash flood event
+> in this catchment (specifically in Schangnau) during July 2014.
+
+the generated code returns:
+
+![map](imgs/gee-execution.png)
+
+## Development
+
+Install the pre-commit hooks once:
 
 ```bash
-python -m server
+poetry run pre-commit install
 ```
 
-## Testing with Client
-
-You can run the example client to test connection and tools:
+Run the full hook suite (detect-secrets, autoflake, black, isort,
+mypy, pylint, pytest+coverage):
 
 ```bash
-python client.py
+poetry run pre-commit run --all-files
 ```
+
+Run just the tests:
+
+```bash
+poetry run pytest
+```
+
+## License
+
+MIT — see [LICENSE](LICENSE).

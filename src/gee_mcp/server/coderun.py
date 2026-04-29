@@ -23,16 +23,10 @@ class GEEPythonExecution:
             logger.debug('no Earth Engine project provided, assuming API is already initialized')
 
     def exec(self, code):
-        try:
-            del(gee_main)
-        except:
-            pass
-
-        namespace = {}
-        exec(code, namespace)
-        gee_main = namespace['gee_main']
-        r = gee_main()
-        return r
+        namespace: dict = {}
+        exec(code, namespace)  # pylint: disable=exec-used
+        gee_main = namespace["gee_main"]
+        return gee_main()
 
     def fix_code_iteration(self, code, previous_errors=[]):
         """

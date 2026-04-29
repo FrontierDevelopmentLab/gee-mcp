@@ -5,7 +5,7 @@ import hashlib
 import json
 import os
 
-def init_genai_client(model='gemini-3.1-pro-preview'):
+def init_genai_client(model='gemini-2.5-pro'):
 
     api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     vertexai_project = os.getenv("VERTEXAI_PROJECT", False)
@@ -30,7 +30,7 @@ class Gemini:
                  api_key=None,
                  project=None,
                  location='global',
-                 model = 'gemini-3.1-pro-preview',
+                 model = 'gemini-2.5-pro',
                  cache_dir=None):
         """
         use either api_key (for Gemini Developer API), or project + location (for VertexAI API)

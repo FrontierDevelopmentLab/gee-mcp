@@ -30,25 +30,26 @@ class NoTagFoundError(Exception):
     pass
 
 def extract_xml_tag(text, tag):
-    p1 = text.find(f'<{tag}>')
-    p2 = text.find(f'</{tag}>')
+    """Extract content between ``<tag>`` and ``</tag>`` in text."""
+    p1 = text.find(f"<{tag}>")
+    p2 = text.find(f"</{tag}>")
 
-    if p2<=p1:
-        raise NoTagFoundError(f'no {tag} found in genai response')
+    if p1 < 0 or p2 <= p1:
+        raise NoTagFoundError(f"no {tag} found in genai response")
 
-    return text[p1+len(tag)+2:p2]
+    return text[p1 + len(tag) + 2 : p2]
+
 
 def extract_tag(text, tag):
-    # extract the graph
-    pattern = r'```{tag}(.*)```'.format(tag=tag) 
-    match = re.search(pattern, text, flags=re.DOTALL)
-    if match:
-        # extract the graph definition
-        content = match.group(1)
-        return content
+    """Extract the first ```{tag} ... ``` markdown fence from text.
 
-    else:
-        raise NoTagFoundError(f'no {tag} found in genai response')
+    Uses a non-greedy match so that subsequent fences in the same text
+    are not consumed.
+    """
+    pattern = rf"```{tag}(.*?)```"
+    if match := re.search(pattern, text, flags=re.DOTALL):
+        return match.group(1)
+    raise NoTagFoundError(f"no {tag} found in genai response")
 
 def is_file_older_than_one_hour(filepath):
     """

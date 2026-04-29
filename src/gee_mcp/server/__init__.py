@@ -1,7 +1,6 @@
 """Unified FastMCP server for GEE.
 
-Registers all tools (download, dataset listing, metadata extraction/
-analysis) under a single ``FastMCP("mcp-gee-server")`` instance.
+Registers all tools under a single ``FastMCP("gee-mcp")`` instance.
 
 Tools
 -----
@@ -21,8 +20,13 @@ Tools
 - ``generate_python_from_question``
 - ``generate_python_from_reasoning_steps``
 - ``generate_python_from_abstract_graph``
-- ``generate_generate_abstract_graph_from_question``
+- ``generate_abstract_graph_from_question``
 - ``extract_factuality_issues``
+- ``assess_factuality_issue``
+- ``get_datasets_locations_and_periods``
+- ``identify_sensible_variables``
+- ``sensitivity_analysis``
+- ``execute_gee_python``
 
 Prompts
 -------
@@ -31,10 +35,8 @@ Prompts
 
 Run standalone::
 
-    python -m server
+    python -m gee_mcp.server
 """
-
-import os
 
 from .auth import setup_gee
 
@@ -103,8 +105,10 @@ from .tools_analysis import (  # noqa: E402, F401
     threshold_area,
     zonal_statistics,
     extract_factuality_issues,
+    assess_factuality_issue,
 )
 from .analysis import (  # noqa: E402, F401
+    _extract_factuality_issues,
     _get_datasets_locations_and_periods,
     _identify_sensible_variables,
     _sensitivity_analysis,
@@ -138,13 +142,6 @@ from .codegen import (  # noqa: E402, F401
 
 from .coderun import (
     _execute_gee_python
-)
-
-from .analysis import (
-    _extract_factuality_issues,
-    _get_datasets_locations_and_periods,
-    _identify_sensible_variables,
-    _sensitivity_analysis,
 )
 
 # ------------------------------------------------------------------
