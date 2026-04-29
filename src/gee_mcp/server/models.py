@@ -49,7 +49,9 @@ class RegionParams(BaseModel):
         geojson_provided = geojson is not None
         bbox_provided = bbox is not None
 
-        provided_options = sum([coords_provided, geojson_provided, bbox_provided])
+        provided_options = sum(
+            [coords_provided, geojson_provided, bbox_provided]
+        )
 
         if provided_options == 0:
             raise ValueError(
@@ -80,7 +82,9 @@ class DownloadParams(RegionParams):
     scale: int = Field(10, description="Pixel resolution in meters")
     bands: Optional[str] = Field(
         "B4,B3,B2",
-        description=("Comma-separated band names to download, " "e.g., B4,B3,B2"),
+        description=(
+            "Comma-separated band names to download, " "e.g., B4,B3,B2"
+        ),
     )
     dataset: str = Field(
         "COPERNICUS/S2_SR_HARMONIZED",
@@ -115,11 +119,15 @@ class ComputeIndexParams(RegionParams):
     )
     index_name: Optional[str] = Field(
         None,
-        description=("Well-known spectral index: " "NDVI, NDWI, EVI, NBR, NDBI, SAVI."),
+        description=(
+            "Well-known spectral index: " "NDVI, NDWI, EVI, NBR, NDBI, SAVI."
+        ),
     )
     expression: Optional[str] = Field(
         None,
-        description=("Custom band math expression, " 'e.g. "(B8 - B4) / (B8 + B4)".'),
+        description=(
+            "Custom band math expression, " 'e.g. "(B8 - B4) / (B8 + B4)".'
+        ),
     )
     scale: int = Field(10, description="Pixel resolution in metres.")
     max_cloud_cover: Optional[float] = Field(
@@ -142,9 +150,9 @@ class ComputeIndexParams(RegionParams):
     def check_index_or_expression(cls, data: Any) -> Any:
         """Ensure exactly one of index_name or expression."""
         # Run the parent validator first
-        data = super(ComputeIndexParams, ComputeIndexParams).check_coords_or_geojson(
-            data
-        )
+        data = super(
+            ComputeIndexParams, ComputeIndexParams
+        ).check_coords_or_geojson(data)
         if not isinstance(data, dict):
             return data
         index_name = data.get("index_name")
@@ -186,7 +194,9 @@ class ZonalStatsParams(RegionParams):
     )
     index_name: Optional[str] = Field(
         None,
-        description=("Compute stats for a spectral index " "instead of raw bands."),
+        description=(
+            "Compute stats for a spectral index " "instead of raw bands."
+        ),
     )
     scale: int = Field(10, description="Pixel resolution in metres.")
     max_cloud_cover: Optional[float] = Field(
@@ -205,7 +215,9 @@ class ZonalStatsParams(RegionParams):
     )
     download: bool = Field(
         False,
-        description=("If true, include GeoTIFF download link " "for the composite."),
+        description=(
+            "If true, include GeoTIFF download link " "for the composite."
+        ),
     )
 
 
@@ -220,7 +232,9 @@ class TemporalCompositeParams(RegionParams):
     )
     method: str = Field(
         "median",
-        description=("Composite method: " "median, mosaic, greenest, most_recent."),
+        description=(
+            "Composite method: " "median, mosaic, greenest, most_recent."
+        ),
     )
     bands: Optional[str] = Field(
         "B4,B3,B2",
@@ -279,9 +293,15 @@ class MaskByRasterParams(RegionParams):
         None,
         description="Inclusive upper bound for the mask range.",
     )
-    bands: Optional[str] = Field(None, description="Comma-separated bands to analyse.")
-    index_name: Optional[str] = Field(None, description="Spectral index to compute.")
-    expression: Optional[str] = Field(None, description="Custom band math expression.")
+    bands: Optional[str] = Field(
+        None, description="Comma-separated bands to analyse."
+    )
+    index_name: Optional[str] = Field(
+        None, description="Spectral index to compute."
+    )
+    expression: Optional[str] = Field(
+        None, description="Custom band math expression."
+    )
     scale: int = Field(10, description="Pixel resolution in metres.")
     max_cloud_cover: Optional[float] = Field(
         20.0, description="Maximum cloud cover percentage (0-100)."
@@ -306,9 +326,9 @@ class MaskByRasterParams(RegionParams):
     @classmethod
     def check_mask_range(cls, data: Any) -> Any:
         """Ensure at least one of mask_min/mask_max is provided."""
-        data = super(MaskByRasterParams, MaskByRasterParams).check_coords_or_geojson(
-            data
-        )
+        data = super(
+            MaskByRasterParams, MaskByRasterParams
+        ).check_coords_or_geojson(data)
         if not isinstance(data, dict):
             return data
         if data.get("mask_min") is None and data.get("mask_max") is None:
@@ -328,8 +348,12 @@ class ThresholdAreaParams(RegionParams):
         description="ImageCollection ID.",
     )
     band: Optional[str] = Field(None, description="Single band name.")
-    index_name: Optional[str] = Field(None, description="Spectral index to compute.")
-    expression: Optional[str] = Field(None, description="Custom band math expression.")
+    index_name: Optional[str] = Field(
+        None, description="Spectral index to compute."
+    )
+    expression: Optional[str] = Field(
+        None, description="Custom band math expression."
+    )
     threshold: float = Field(..., description="Threshold value.")
     operator: str = Field(
         "gte",
@@ -338,9 +362,15 @@ class ThresholdAreaParams(RegionParams):
     mask_dataset: Optional[str] = Field(
         None, description="Optional ancillary mask dataset."
     )
-    mask_band: Optional[str] = Field(None, description="Band for ancillary mask.")
-    mask_min: Optional[float] = Field(None, description="Ancillary mask lower bound.")
-    mask_max: Optional[float] = Field(None, description="Ancillary mask upper bound.")
+    mask_band: Optional[str] = Field(
+        None, description="Band for ancillary mask."
+    )
+    mask_min: Optional[float] = Field(
+        None, description="Ancillary mask lower bound."
+    )
+    mask_max: Optional[float] = Field(
+        None, description="Ancillary mask upper bound."
+    )
     scale: int = Field(10, description="Pixel resolution in metres.")
     max_cloud_cover: Optional[float] = Field(
         20.0, description="Maximum cloud cover percentage (0-100)."
@@ -370,9 +400,9 @@ class ThresholdAreaParams(RegionParams):
     @classmethod
     def check_target_and_operator(cls, data: Any) -> Any:
         """Validate exactly one target and a valid operator."""
-        data = super(ThresholdAreaParams, ThresholdAreaParams).check_coords_or_geojson(
-            data
-        )
+        data = super(
+            ThresholdAreaParams, ThresholdAreaParams
+        ).check_coords_or_geojson(data)
         if not isinstance(data, dict):
             return data
 
@@ -382,7 +412,8 @@ class ThresholdAreaParams(RegionParams):
         provided = sum([has_band, has_index, has_expr])
         if provided != 1:
             raise ValueError(
-                "Exactly one of band, index_name, or expression " "must be provided."
+                "Exactly one of band, index_name, or expression "
+                "must be provided."
             )
 
         op = data.get("operator", "gte")
@@ -415,15 +446,23 @@ class MultiPeriodParams(RegionParams):
     )
     analysis: str = Field(
         "zonal_stats",
-        description=("Analysis type: " "zonal_stats, threshold_area, index_stats."),
+        description=(
+            "Analysis type: " "zonal_stats, threshold_area, index_stats."
+        ),
     )
     band: Optional[str] = Field(
         None,
         description=("Single band name (threshold_area analysis)."),
     )
-    bands: Optional[str] = Field(None, description="Bands for zonal_stats analysis.")
-    index_name: Optional[str] = Field(None, description="Spectral index to compute.")
-    expression: Optional[str] = Field(None, description="Custom band math expression.")
+    bands: Optional[str] = Field(
+        None, description="Bands for zonal_stats analysis."
+    )
+    index_name: Optional[str] = Field(
+        None, description="Spectral index to compute."
+    )
+    expression: Optional[str] = Field(
+        None, description="Custom band math expression."
+    )
     threshold: Optional[float] = Field(
         None,
         description="Required if analysis=threshold_area.",
@@ -439,9 +478,15 @@ class MultiPeriodParams(RegionParams):
     mask_dataset: Optional[str] = Field(
         None, description="Optional ancillary mask dataset."
     )
-    mask_band: Optional[str] = Field(None, description="Band for ancillary mask.")
-    mask_min: Optional[float] = Field(None, description="Ancillary mask lower bound.")
-    mask_max: Optional[float] = Field(None, description="Ancillary mask upper bound.")
+    mask_band: Optional[str] = Field(
+        None, description="Band for ancillary mask."
+    )
+    mask_min: Optional[float] = Field(
+        None, description="Ancillary mask lower bound."
+    )
+    mask_max: Optional[float] = Field(
+        None, description="Ancillary mask upper bound."
+    )
     scale: int = Field(10, description="Pixel resolution in metres.")
     max_cloud_cover: Optional[float] = Field(
         20.0, description="Maximum cloud cover percentage (0-100)."
@@ -480,7 +525,9 @@ class MultiPeriodParams(RegionParams):
     @classmethod
     def check_periods_and_analysis(cls, data: Any) -> Any:
         """Validate periods count and threshold requirement."""
-        data = super(MultiPeriodParams, MultiPeriodParams).check_coords_or_geojson(data)
+        data = super(
+            MultiPeriodParams, MultiPeriodParams
+        ).check_coords_or_geojson(data)
         if not isinstance(data, dict):
             return data
 

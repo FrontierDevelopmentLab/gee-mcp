@@ -5,12 +5,12 @@ import inspect
 import json
 import logging
 import os
+import re
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 import ee
 import requests
-import re
-from loguru import logger
 
 from .constants import (
     _REDUCER_MAP,
@@ -20,35 +20,38 @@ from .constants import (
 )
 from .models import RegionParams
 
-import os
-from datetime import datetime, timedelta
-
 # removes leading spaces of each line in a string
-remove_leading_spaces = lambda t: '\n'.join([l.strip() for l in t.splitlines()])
+remove_leading_spaces = lambda t: "\n".join(
+    [l.strip() for l in t.splitlines()]
+)
+
 
 class NoTagFoundError(Exception):
     pass
 
+
 def extract_xml_tag(text, tag):
-    p1 = text.find(f'<{tag}>')
-    p2 = text.find(f'</{tag}>')
+    """Extract content between ``<tag>`` and ``</tag>`` in text."""
+    p1 = text.find(f"<{tag}>")
+    p2 = text.find(f"</{tag}>")
 
-    if p2<=p1:
-        raise NoTagFoundError(f'no {tag} found in genai response')
+    if p1 < 0 or p2 <= p1:
+        raise NoTagFoundError(f"no {tag} found in genai response")
 
-    return text[p1+len(tag)+2:p2]
+    return text[p1 + len(tag) + 2 : p2]
+
 
 def extract_tag(text, tag):
-    # extract the graph
-    pattern = r'```{tag}(.*)```'.format(tag=tag) 
-    match = re.search(pattern, text, flags=re.DOTALL)
-    if match:
-        # extract the graph definition
-        content = match.group(1)
-        return content
+    """Extract the first ```{tag} ... ``` markdown fence from text.
 
-    else:
-        raise NoTagFoundError(f'no {tag} found in genai response')
+    Uses a non-greedy match so that subsequent fences in the same text
+    are not consumed.
+    """
+    pattern = rf"```{tag}(.*?)```"
+    if match := re.search(pattern, text, flags=re.DOTALL):
+        return match.group(1)
+    raise NoTagFoundError(f"no {tag} found in genai response")
+
 
 def is_file_older_than_one_hour(filepath):
     """
@@ -62,13 +65,13 @@ def is_file_older_than_one_hour(filepath):
     """
     # Get the file's last modification timestamp in seconds since the epoch
     modification_timestamp = os.path.getmtime(filepath)
-    
+
     # Convert the timestamp to a datetime object
     modification_time = datetime.fromtimestamp(modification_timestamp)
-    
+
     # Calculate the cutoff time (one hour ago from now)
     cutoff_time = datetime.now() - timedelta(hours=1)
-    
+
     # Compare the file's modification time with the cutoff time
     return modification_time < cutoff_time
 
@@ -157,7 +160,9 @@ def _build_region(params: RegionParams) -> ee.Geometry:
 # ------------------------------------------------------------------
 
 
-def _check_and_split_region(region: ee.Geometry, scale: int) -> List[ee.Geometry]:
+def _check_and_split_region(
+    region: ee.Geometry, scale: int
+) -> List[ee.Geometry]:
     """Check pixel count and recursively split if too large."""
     try:
         proj = ee.Projection("EPSG:4326").atScale(scale)
@@ -244,7 +249,9 @@ def _download_with_fallback(
     depth: int = 0,
 ) -> List[str]:
     """Download with recursive split / scale-backoff."""
-    download_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "download")
+    download_dir = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "download"
+    )
     os.makedirs(download_dir, exist_ok=True)
 
     download_region = region.bounds().getInfo()["coordinates"]
@@ -270,13 +277,16 @@ def _download_with_fallback(
             and "must be less than or equal to" in err_msg
         ):
             logging.info(
-                "Tile too large at scale=%d. depth=%d. " "Attempting fallback...",
+                "Tile too large at scale=%d. depth=%d. "
+                "Attempting fallback...",
                 scale,
                 depth,
             )
             if depth < 2:
                 results: List[str] = []
-                for idx, sub in enumerate(_split_region_quadrants(region), start=1):
+                for idx, sub in enumerate(
+                    _split_region_quadrants(region), start=1
+                ):
                     results.extend(
                         _download_with_fallback(
                             selected_bands,
@@ -338,7 +348,9 @@ def _build_collection(
             ee.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", max_cloud_cover)
         )
     elif dataset.startswith("LANDSAT") and max_cloud_cover is not None:
-        collection = collection.filter(ee.Filter.lt("CLOUD_COVER", max_cloud_cover))
+        collection = collection.filter(
+            ee.Filter.lt("CLOUD_COVER", max_cloud_cover)
+        )
     return collection
 
 
@@ -376,7 +388,9 @@ def _resolve_target_image(
     if expression:
         band_info = composite.bandNames().getInfo()
         band_map = {b: composite.select(b) for b in band_info}
-        return composite.expression(expression, band_map).rename("custom_index")
+        return composite.expression(expression, band_map).rename(
+            "custom_index"
+        )
 
     if bands:
         band_list = [b.strip() for b in bands.split(",") if b.strip()]
@@ -431,7 +445,9 @@ def _build_reducer(reducers: str):
     combined = _REDUCER_MAP[requested[0]]()
     for r_name in requested[1:]:
         if r_name in _REDUCER_MAP:
-            combined = combined.combine(_REDUCER_MAP[r_name](), sharedInputs=True)
+            combined = combined.combine(
+                _REDUCER_MAP[r_name](), sharedInputs=True
+            )
     return combined
 
 

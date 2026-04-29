@@ -1,63 +1,67 @@
-import re
-import mermaid as md
-from loguru import logger
-from glob import glob
 import json
-import numpy as np
 import os
-import ee
-from .helpers import extract_tag, extract_xml_tag, remove_leading_spaces, NoTagFoundError
+from glob import glob
+
+import numpy as np
+from loguru import logger
+
+from .coderun import GEEPythonExecution
 from .genai import init_genai_client
-from  .coderun import GEEPythonExecution
+from .helpers import (
+    NoTagFoundError,
+    extract_tag,
+    extract_xml_tag,
+    remove_leading_spaces,
+)
+
 
 class QuestionRecord:
 
     """
     class to manage EO questions and associated artifacts (graph, generated code, etc.)
     """
+
     @classmethod
     def load_question(cls, question_file):
         with open(question_file) as f:
             q = json.load(f)
 
-        if 'graph' in q.keys():
-            q['graph_javascript'] = q['graph']
-            del(q['graph'])
+        if "graph" in q.keys():
+            q["graph_javascript"] = q["graph"]
+            del q["graph"]
 
-        if 'graph_fixed' in q.keys():
-            q['graph_javascript_fixed'] = q['graph_fixed']
-            del(q['graph_fixed'])
+        if "graph_fixed" in q.keys():
+            q["graph_javascript_fixed"] = q["graph_fixed"]
+            del q["graph_fixed"]
 
-        if 'explanation' in q.keys():
-            q['explanation_javascript'] = q['explanation']
-            del(q['explanation'])
+        if "explanation" in q.keys():
+            q["explanation_javascript"] = q["explanation"]
+            del q["explanation"]
 
-        if 'thinking' in q.keys():
-            q['thiking_python'] = q['thinking']
-            del(q['thinking'])
+        if "thinking" in q.keys():
+            q["thinking_python"] = q["thinking"]
+            del q["thinking"]
 
-        dataset_dir = '/'.join(question_file.split('/')[:-1])
-        
-        qo = cls(question=q['question'], dataset_dir=dataset_dir, exists_ok=True)
-        if 'remarks' in q.keys():
-            qo.remarks_for_prompts = q['remarks']
-        
+        dataset_dir = "/".join(question_file.split("/")[:-1])
+
+        qo = cls(
+            question=q["question"], dataset_dir=dataset_dir, exists_ok=True
+        )
+        if "remarks" in q.keys():
+            qo.remarks_for_prompts = q["remarks"]
+
         qo.record = q
         qo.question_file = question_file
 
-        if 'reference_refined_question' in qo.record.keys():
+        if "reference_refined_question" in qo.record.keys():
+            s = qo.record["reference_refined_question"]["steps"]
+            s = "\n - " + "\n - ".join([i["sub_question"] for i in s])
 
-            s = qo.record['reference_refined_question']['steps']
-            s = "\n - "+"\n - ".join([i['sub_question'] for i in s])
+            qo.record["reasoning_steps"] = s
 
-            qo.record['reasoning_steps'] = s
+        return qo
 
-        return qo    
-
-    def __init__(self, 
-                 question, 
-                 dataset_dir=None, 
-                 exists_ok=False):
+    def __init__(self, question, dataset_dir=None, exists_ok=False):
         """
         if 'dataset_dir' is None, nothing will be saved (useful for transient calls)
         """
@@ -67,27 +71,31 @@ class QuestionRecord:
 
         if dataset_dir is not None:
             r = self.check_question_exists()
-            
+
             if not exists_ok:
                 if r:
-                    raise ValueError(f'question already exists in {r}')
+                    raise ValueError(f"question already exists in {r}")
             else:
                 self.question_file = r
 
-        self.record = {'question': self.question}   
+        self.record = {"question": self.question}
 
     def clean(self):
         for k in list(self.record.keys()):
-            if k not in ['question', 'reference_refined_question', 'reasoning_steps']:
-                del(self.record[k])
+            if k not in [
+                "question",
+                "reference_refined_question",
+                "reasoning_steps",
+            ]:
+                del self.record[k]
         return self
 
-    def __setitem__(self, k,v):
+    def __setitem__(self, k, v):
         self.record[k] = v
 
     def __getitem__(self, k):
         return self.record[k]
-    
+
     def keys(self):
         return self.record.keys()
 
@@ -98,27 +106,27 @@ class QuestionRecord:
         # checks if the question already exists in any of the entries
         # in the dataset (checks q*.json files under dataset_dir)
         q = remove_leading_spaces(self.question)
-        q = self.question.replace('\n', ' ').strip()
+        q = self.question.replace("\n", " ").strip()
 
-        files = glob(f'{self.dataset_dir}/q*.json')
+        files = glob(f"{self.dataset_dir}/q*.json")
         for file in files:
             with open(file) as f:
-                qj = json.load(f)['question']
+                qj = json.load(f)["question"]
                 qj = remove_leading_spaces(qj)
-                qj = qj.replace('\n', ' ').strip()
+                qj = qj.replace("\n", " ").strip()
                 if q == qj:
                     return file
-                
-        return False    
+
+        return False
 
     def set_question_file(self, question_file):
         self.question_file = question_file
         return self
 
     def save(self):
-        """ saves dict 'r' under 'dataset_dir' as qNNNN.json
-            with a consecutive number wrt the files already
-            existing in the folder
+        """saves dict 'r' under 'dataset_dir' as qNNNN.json
+        with a consecutive number wrt the files already
+        existing in the folder
         """
 
         # skip if no dataset dir provided
@@ -127,38 +135,43 @@ class QuestionRecord:
 
         if self.question_file is not None:
             if os.path.isfile(self.question_file):
-                logger.info(f'saving record in existing file {self.question_file}')
+                logger.info(
+                    f"saving record in existing file {self.question_file}"
+                )
             else:
-                logger.info(f'saving record in new file {self.question_file}')
-            with open(self.question_file, 'w') as f:
+                logger.info(f"saving record in new file {self.question_file}")
+            with open(self.question_file, "w") as f:
                 json.dump(self.record, f, indent=4)
             return
 
         # if question file is not set, create a consecutive number file
-        files = glob(f'{self.dataset_dir}/q*.json')
-        if len(files)==0:
+        files = glob(f"{self.dataset_dir}/q*.json")
+        if len(files) == 0:
             next_qnumber = 1
         else:
-            next_qnumber = np.max([int(f.split('/')[-1].split('.')[0][1:]) for f in files])+1
-        fname = f'{self.dataset_dir}/q{next_qnumber:04d}.json'
+            next_qnumber = (
+                np.max(
+                    [int(f.split("/")[-1].split(".")[0][1:]) for f in files]
+                )
+                + 1
+            )
+        fname = f"{self.dataset_dir}/q{next_qnumber:04d}.json"
 
-        logger.info(f'saving record in new file {fname}')
-        with open(fname, 'w', encoding='utf-8') as f:
+        logger.info(f"saving record in new file {fname}")
+        with open(fname, "w", encoding="utf-8") as f:
             json.dump(self.record, f, ensure_ascii=False, indent=4)
 
 
 class GeoQuestion:
-
-
-    def __init__(self, 
-                 question_record, 
-                 gee_dataset_list=None, 
-                 number_of_fix_iterations = 5,
-                 ):
-        
+    def __init__(
+        self,
+        question_record,
+        gee_dataset_list=None,
+        number_of_fix_iterations=5,
+    ):
         """
         constructor
-        
+
         :param question_record: a QA object
         :param genai: the genai object to generate assets
         :param gee_dataset_list: list of available GEE datasets to include in the prompts. If None, will not include that information in the prompts.
@@ -167,32 +180,38 @@ class GeoQuestion:
         self.question_record = question_record
         self.qr = self.question_record
         self.genai_client = init_genai_client()
-        self.remarks_for_prompts = ''
+        self.remarks_for_prompts = ""
         self.gee_dataset_list = gee_dataset_list
         self.number_of_fix_iterations = number_of_fix_iterations
         self.fix_code = number_of_fix_iterations > 0
 
         if self.fix_code:
-            logger.info(f'will attempt to fix any code generated in max {self.number_of_fix_iterations} iterations')
-            self.gee_runtime = GEEPythonExecution(genai_client=self.genai_client)
+            logger.info(
+                f"will attempt to fix any code generated in max {self.number_of_fix_iterations} iterations"
+            )
+            self.gee_runtime = GEEPythonExecution(
+                genai_client=self.genai_client
+            )
 
     def set_remarks_for_prompts(self, remarks):
         self.remarks_for_prompts = remarks
         return self
 
-
     def get_dataset_prompt_instructions(self):
-        dataset_instructions = f"""
+        dataset_instructions = (
+            f"""
         - you must use one or more of the Google Earth Engine datasets included in the 
           following list {self.gee_dataset_list}
         - you do not need to use all the datasets in the list, but you can only use the 
           ones in that list
-        """ if self.gee_dataset_list is not None else ''
+        """
+            if self.gee_dataset_list is not None
+            else ""
+        )
 
         return dataset_instructions
 
     def get_prompt_for_python_from_question(self):
-
         dataset_instructions = self.get_dataset_prompt_instructions()
 
         p = f"""
@@ -243,11 +262,9 @@ class GeoQuestion:
 
         {self.remarks_for_prompts}
         """
-        return remove_leading_spaces(p)      
-
+        return remove_leading_spaces(p)
 
     def get_prompt_for_abstract_graph_from_question(self):
-
         dataset_instructions = self.get_dataset_prompt_instructions()
 
         p = f"""
@@ -287,11 +304,9 @@ class GeoQuestion:
 
         {self.remarks_for_prompts}
         """
-        return remove_leading_spaces(p)      
+        return remove_leading_spaces(p)
 
     def get_prompt_for_python_from_abstract_graph(self):
-
-
         dataset_instructions = self.get_dataset_prompt_instructions()
 
         p = f"""
@@ -350,13 +365,10 @@ class GeoQuestion:
         {self.qr['abstract_graph']}
         </GRAPH>
         """
-        return remove_leading_spaces(p)      
-    
+        return remove_leading_spaces(p)
 
     def get_prompt_for_python_from_reasoning_steps(self):
-
         dataset_instructions = self.get_dataset_prompt_instructions()
-
 
         p = f"""
         You are an expert earth observation scientist and Python programmer. You are 
@@ -416,33 +428,34 @@ class GeoQuestion:
         {self.qr['reasoning_steps']}
         </REASONING_STEPS>
         """
-        return remove_leading_spaces(p)      
-    
+        return remove_leading_spaces(p)
 
     def run_fix_code(self, python_code):
-        r = self.gee_runtime.run_fix_code(python_code, 
-                                          number_of_iterations=self.number_of_fix_iterations)
+        r = self.gee_runtime.run_fix_code(
+            python_code, number_of_iterations=self.number_of_fix_iterations
+        )
         z = {}
-        
-        if len(r)==0:
-            z['python_code_status'] = 'error'
-            z['python_code_error'] = 'no running iterations'
-        elif 'result' in r[-1].keys():
-            z['python_code_status'] = 'success'
-            z['python_code'] = r[-1]['code_original']
-            z['python_code_result'] = r[-1]['result']
-        elif 'code_original_error' in r[-1].keys():
-            z['python_code_status'] = 'error'
-            z['python_code'] = r[-1]['code_original']
-            z['python_code_error'] = r[-1]['code_original_error']
+
+        if len(r) == 0:
+            z["python_code_status"] = "error"
+            z["python_code_error"] = "no running iterations"
+        elif "result" in r[-1].keys():
+            z["python_code_status"] = "success"
+            z["python_code"] = r[-1]["code_original"]
+            z["python_code_result"] = r[-1]["result"]
+        elif "code_original_error" in r[-1].keys():
+            z["python_code_status"] = "error"
+            z["python_code"] = r[-1]["code_original"]
+            z["python_code_error"] = r[-1]["code_original_error"]
         else:
-            z['python_code_status'] = 'error'
-            z['python_code_error'] = 'internal error fixing code'
+            z["python_code_status"] = "error"
+            z["python_code_error"] = "internal error fixing code"
 
-        z['python_code_fix_history'] = [{k:v for k,v in ri.items() if k!='map'} for ri in r]
+        z["python_code_fix_history"] = [
+            {k: v for k, v in ri.items() if k != "map"} for ri in r
+        ]
 
-        return z    
-
+        return z
 
     def _generate_python(self, prompt):
         """
@@ -459,197 +472,224 @@ class GeoQuestion:
 
                 # check we can extract the tag content
                 try:
-                    _ = extract_xml_tag(r['answer'], 'PYTHON')
-                    logger.debug('<PYTHON> found in response')
+                    _ = extract_xml_tag(r["answer"], "PYTHON")
+                    logger.debug("<PYTHON> found in response")
                     return r
-                except NoTagFoundError as e:
+                except NoTagFoundError:
                     # in case python is with ```python mark up
-                    _ = extract_tag(r['answer'], 'python')
-                    r['answer'] = r['answer'].replace('```python', '<PYTHON>')\
-                                             .replace('```', '</PYTHON>')
+                    _ = extract_tag(r["answer"], "python")
+                    r["answer"] = (
+                        r["answer"]
+                        .replace("```python", "<PYTHON>")
+                        .replace("```", "</PYTHON>")
+                    )
                     return r
-            
+
             except NoTagFoundError as e:
-                if i==2:
-                    logger.debug(f'no PYTHON tag found in genai response, response content is\n\n{r["answer"]}')
+                if i == 2:
+                    logger.debug(
+                        f'no PYTHON tag found in genai response, response content is\n\n{r["answer"]}'
+                    )
                     raise e
                 else:
-                    logger.debug('no PYTHON tag found in genai response, trying again...')
+                    logger.debug(
+                        "no PYTHON tag found in genai response, trying again..."
+                    )
 
     def generate_python_from_question(self):
-
         p = self.get_prompt_for_python_from_question()
-        
-        logger.info(f'calling genai to generate gee python code from question')
+
+        logger.info(f"calling genai to generate gee python code from question")
         r = self._generate_python(p)
 
         self.genai_response = r
-        c = extract_xml_tag(r['answer'], 'PYTHON')
-        e = r['answer'].replace(f'<PYTHON>{c}</PYTHON>', '')            
-        
-        if not 'question_derived' in self.qr.keys():
-            self.qr['question_derived'] = {}
+        c = extract_xml_tag(r["answer"], "PYTHON")
+        e = r["answer"].replace(f"<PYTHON>{c}</PYTHON>", "")
 
-        self.qr['question_derived'].update( {
-            'python_code': c,
-            'python_code_thinking': r['thought'],
-            'python_code_explanation': e,
-            'python_code_remarks': self.remarks_for_prompts,
-            'python_code_status': 'not_run'
-        })
+        if not "question_derived" in self.qr.keys():
+            self.qr["question_derived"] = {}
+
+        self.qr["question_derived"].update(
+            {
+                "python_code": c,
+                "python_code_thinking": r["thought"],
+                "python_code_explanation": e,
+                "python_code_remarks": self.remarks_for_prompts,
+                "python_code_status": "not_run",
+            }
+        )
 
         self.qr.save()
 
         if self.fix_code:
             z = self.run_fix_code(c)
-            self.qr['question_derived'].update(z)
+            self.qr["question_derived"].update(z)
             self.qr.save()
 
         return self.qr
-    
-    def generate_abstract_graph_from_question(self):
 
-        if 'abstract_graph' in self.qr.keys():
-            raise ValueError('abstract graph already present in question record')
+    def generate_abstract_graph_from_question(self):
+        if "abstract_graph" in self.qr.keys():
+            raise ValueError(
+                "abstract graph already present in question record"
+            )
 
         p = self.get_prompt_for_abstract_graph_from_question()
 
-        logger.info(f'calling genai to generate abstract graph from question')
+        logger.info(f"calling genai to generate abstract graph from question")
         r = self.genai_client.call(p)
         self.genai_response = r
 
-        if not 'question_derived' in self.qr.keys():
-            self.qr['question_derived'] = {}
+        if not "question_derived" in self.qr.keys():
+            self.qr["question_derived"] = {}
 
+        self.qr["question_derived"].update(
+            {
+                "abstract_graph": extract_xml_tag(r["answer"], "GRAPH"),
+                "abstract_graph_thinking": r["thought"],
+                "abstract_graph_explanation": extract_xml_tag(
+                    r["answer"], "EXPLANATION"
+                ),
+                "abstract_graph_remarks": self.remarks_for_prompts,
+            }
+        )
 
-        self.qr['question_derived'].update ({
-            'abstract_graph': extract_xml_tag(r['answer'], 'GRAPH'),
-            'abstract_graph_thinking': r['thought'],
-            'abstract_graph_explanation': extract_xml_tag(r['answer'], 'EXPLANATION'),
-            'abstract_graph_remarks': self.remarks_for_prompts  
-        })
-
-        self.qr['abstract_graph'] = self.qr['question_derived']['abstract_graph']
+        self.qr["abstract_graph"] = self.qr["question_derived"][
+            "abstract_graph"
+        ]
 
         self.qr.save()
 
         return self.qr
-    
 
     def generate_python_from_abstract_graph(self):
-
         p = self.get_prompt_for_python_from_abstract_graph()
 
-        logger.info(f'calling genai to generate gee python from graph')
+        logger.info(f"calling genai to generate gee python from graph")
 
         r = self._generate_python(p)
         self.genai_response = r
-        c = extract_xml_tag(r['answer'], 'PYTHON')
-        e = r['answer'].replace(f'<PYTHON>{c}</PYTHON>', '')            
-        
-        if not 'abstract_graph_derived' in self.qr.keys():
-            self.qr['abstract_graph_derived'] = {}
+        c = extract_xml_tag(r["answer"], "PYTHON")
+        e = r["answer"].replace(f"<PYTHON>{c}</PYTHON>", "")
 
-        self.qr['abstract_graph_derived'] = {
-            'python_code': c,
-            'ptyhon_code_thinking': r['thought'],
-            'python_code_explanation': e,
-            'python_code_remarks': self.remarks_for_prompts,
-            'python_code_status': 'not_run'
+        if not "abstract_graph_derived" in self.qr.keys():
+            self.qr["abstract_graph_derived"] = {}
+
+        self.qr["abstract_graph_derived"] = {
+            "python_code": c,
+            "python_code_thinking": r["thought"],
+            "python_code_explanation": e,
+            "python_code_remarks": self.remarks_for_prompts,
+            "python_code_status": "not_run",
         }
 
         self.qr.save()
 
         if self.fix_code:
             z = self.run_fix_code(c)
-            self.qr['abstract_graph_derived'].update(z)
+            self.qr["abstract_graph_derived"].update(z)
             self.qr.save()
 
         return self.qr
-    
 
     def generate_python_from_reasoning_steps(self):
-
         p = self.get_prompt_for_python_from_reasoning_steps()
 
-        logger.info(f'calling genai to generate gee python from reasoning steps')
+        logger.info(
+            f"calling genai to generate gee python from reasoning steps"
+        )
 
         r = self._generate_python(p)
         self.genai_response = r
-        c = extract_xml_tag(r['answer'], 'PYTHON')
-        e = r['answer'].replace(f'<PYTHON>{c}</PYTHON>', '')            
-        
-        if not 'reasoning_steps_derived' in self.qr.keys():
-            self.qr['reasoning_steps_derived'] = {}
+        c = extract_xml_tag(r["answer"], "PYTHON")
+        e = r["answer"].replace(f"<PYTHON>{c}</PYTHON>", "")
 
-        self.qr['reasoning_steps_derived'] = {
-            'python_code': c,
-            'ptyhon_code_thinking': r['thought'],
-            'python_code_explanation': e,
-            'python_code_remarks': self.remarks_for_prompts,
-            'python_code_status': 'not_run'
+        if not "reasoning_steps_derived" in self.qr.keys():
+            self.qr["reasoning_steps_derived"] = {}
+
+        self.qr["reasoning_steps_derived"] = {
+            "python_code": c,
+            "python_code_thinking": r["thought"],
+            "python_code_explanation": e,
+            "python_code_remarks": self.remarks_for_prompts,
+            "python_code_status": "not_run",
         }
 
         self.qr.save()
 
         if self.fix_code:
             z = self.run_fix_code(c)
-            self.qr['reasoning_steps_derived'].update(z)
+            self.qr["reasoning_steps_derived"].update(z)
             self.qr.save()
 
         return self.qr
+
 
 # functions for direct calling with strings
 
-def _generate_python_from_question(question: str, gee_datasets: list = None, fix_code: bool = True) -> dict:
 
-    q = QuestionRecord(question=question)  
-    g = GeoQuestion(q, 
-                    gee_dataset_list=gee_datasets, 
-                    number_of_fix_iterations=5 if fix_code else 0)
-    
+def _generate_python_from_question(
+    question: str, gee_datasets: list = None, fix_code: bool = True
+) -> dict:
+    q = QuestionRecord(question=question)
+    g = GeoQuestion(
+        q,
+        gee_dataset_list=gee_datasets,
+        number_of_fix_iterations=5 if fix_code else 0,
+    )
+
     g.generate_python_from_question()
-    
-    return q.record['question_derived']
 
-def _generate_abstract_graph_from_question(question: str, gee_datasets: list = None) -> dict:
+    return q.record["question_derived"]
 
-    q = QuestionRecord(question=question)  
-    g = GeoQuestion(q, 
-                    gee_dataset_list=gee_datasets, 
-                    )
-    
+
+def _generate_abstract_graph_from_question(
+    question: str, gee_datasets: list = None
+) -> dict:
+    q = QuestionRecord(question=question)
+    g = GeoQuestion(
+        q,
+        gee_dataset_list=gee_datasets,
+    )
+
     g.generate_abstract_graph_from_question()
-    
-    return q.record['question_derived']
 
-def _generate_python_from_reasoning_steps(question: str, 
-                                         reasoning_steps: str,
-                                         gee_datasets: list = None, 
-                                         fix_code: bool = True) -> dict:
-    
-    q = QuestionRecord(question=question)  
-    q['reasoning_steps'] = reasoning_steps
-    g = GeoQuestion(q, 
-                    gee_dataset_list=gee_datasets, 
-                    number_of_fix_iterations=5 if fix_code else 0)
-    
+    return q.record["question_derived"]
+
+
+def _generate_python_from_reasoning_steps(
+    question: str,
+    reasoning_steps: str,
+    gee_datasets: list = None,
+    fix_code: bool = True,
+) -> dict:
+    q = QuestionRecord(question=question)
+    q["reasoning_steps"] = reasoning_steps
+    g = GeoQuestion(
+        q,
+        gee_dataset_list=gee_datasets,
+        number_of_fix_iterations=5 if fix_code else 0,
+    )
+
     g.generate_python_from_reasoning_steps()
-    
-    return q.record['reasoning_steps_derived']
 
-def _generate_python_from_abstract_graph(question: str, 
-                                         abstract_graph: str,
-                                         gee_datasets: list = None, 
-                                         fix_code: bool = True) -> dict:
+    return q.record["reasoning_steps_derived"]
 
-    q = QuestionRecord(question=question)  
-    q['abstract_graph'] = abstract_graph
-    g = GeoQuestion(q, 
-                    gee_dataset_list=gee_datasets, 
-                    number_of_fix_iterations=5 if fix_code else 0)
-    
+
+def _generate_python_from_abstract_graph(
+    question: str,
+    abstract_graph: str,
+    gee_datasets: list = None,
+    fix_code: bool = True,
+) -> dict:
+    q = QuestionRecord(question=question)
+    q["abstract_graph"] = abstract_graph
+    g = GeoQuestion(
+        q,
+        gee_dataset_list=gee_datasets,
+        number_of_fix_iterations=5 if fix_code else 0,
+    )
+
     g.generate_python_from_abstract_graph()
-    
-    return q.record['abstract_graph_derived']
 
+    return q.record["abstract_graph_derived"]

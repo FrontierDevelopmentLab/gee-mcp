@@ -26,9 +26,10 @@ import requests
 from bs4 import BeautifulSoup
 from markitdown import MarkItDown
 
+from . import helpers
 from .app import mcp
 from .constants import BASE_URL
-from . import helpers
+
 
 # -------------------------------------------------------------------
 # Tool: list_datasets
@@ -40,16 +41,26 @@ def list_datasets() -> str:
     Returns a JSON string containing dataset IDs, URLs, and short
     descriptions.  Results are cached for one hour first in mem, then in file.
     """
-    if helpers._datasets_cache and (time.time() - helpers._datasets_last_update < 3600):
+    if helpers._datasets_cache and (
+        time.time() - helpers._datasets_last_update < 3600
+    ):
         return helpers._datasets_cache
 
     import tempfile
+
     temp_dir = tempfile.gettempdir()
-    datasets_metadata_file = os.path.join(temp_dir, 'gee-datasets-metadata.json')
-    if os.path.exists(datasets_metadata_file) and not helpers.is_file_older_than_one_hour(datasets_metadata_file):
-        with open(datasets_metadata_file, 'r') as f:
+    datasets_metadata_file = os.path.join(
+        temp_dir, "gee-datasets-metadata.json"
+    )
+    if os.path.exists(
+        datasets_metadata_file
+    ) and not helpers.is_file_older_than_one_hour(datasets_metadata_file):
+        with open(datasets_metadata_file, "r") as f:
             r = json.load(f)
-            r = [{k:v if v is not None else "" for k,v in ri.items()} for ri in r]
+            r = [
+                {k: v if v is not None else "" for k, v in ri.items()}
+                for ri in r
+            ]
             return json.dumps(r, indent=2)
 
     try:
@@ -91,13 +102,13 @@ def list_datasets() -> str:
                     }
                 )
 
-        with open(datasets_metadata_file, 'w') as f:
+        with open(datasets_metadata_file, "w") as f:
             json.dump(datasets, f, indent=2)
 
         helpers._datasets_cache = json.dumps(datasets, indent=2)
         helpers._datasets_last_update = time.time()
         return helpers._datasets_cache
-    
+
     except requests.exceptions.Timeout:
         return "Error: Request timed out while scraping datasets."
     except Exception as e:
@@ -149,7 +160,9 @@ def _get_dataset_info(dataset_id: str) -> str:
         return json.dumps({"error": str(e), "id": dataset_id})
 
 
-@mcp.tool(description=("Get detailed information about a specific GEE dataset"))
+@mcp.tool(
+    description=("Get detailed information about a specific GEE dataset")
+)
 def get_dataset_info(dataset_id: str) -> str:
     """Get detailed information about a specific GEE dataset."""
     return _get_dataset_info(dataset_id)
@@ -214,8 +227,8 @@ def analyze_metadata(dataset_id: str) -> str:
     The Gemini client is created lazily so that the server can start
     without a Gemini API key if this tool is not invoked.
     """
-    from .utils import analyze_dataset_metadata
     from .genai import Gemini
+    from .utils import analyze_dataset_metadata
 
     page_content = _get_dataset_info(dataset_id)
     if page_content.startswith("{"):
@@ -361,7 +374,9 @@ def check_imagery_availability(
     has_bbox = all(bbox_provided)
 
     try:
-        collection = ee.ImageCollection(dataset_id).filterDate(start_date, end_date)
+        collection = ee.ImageCollection(dataset_id).filterDate(
+            start_date, end_date
+        )
 
         if has_bbox:
             bbox = ee.Geometry.Rectangle([west, south, east, north])
@@ -377,7 +392,9 @@ def check_imagery_availability(
                 stac = helpers._fetch_stac_json(cat_id)
                 if stac:
                     try:
-                        stac_interval = stac["extent"]["temporal"]["interval"][0]
+                        stac_interval = stac["extent"]["temporal"]["interval"][
+                            0
+                        ]
                     except (KeyError, IndexError, TypeError):
                         pass
 
@@ -469,9 +486,9 @@ def check_imagery_availability(
         earliest_ms = date_range.get("min")
         latest_ms = date_range.get("max")
         earliest_date = (
-            datetime.fromtimestamp(earliest_ms / 1000, tz=timezone.utc).strftime(
-                "%Y-%m-%d"
-            )
+            datetime.fromtimestamp(
+                earliest_ms / 1000, tz=timezone.utc
+            ).strftime("%Y-%m-%d")
             if earliest_ms
             else None
         )
@@ -512,7 +529,9 @@ def check_imagery_availability(
         )
         sample_dates = (
             [
-                datetime.fromtimestamp(ts / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
+                datetime.fromtimestamp(ts / 1000, tz=timezone.utc).strftime(
+                    "%Y-%m-%d"
+                )
                 for ts in sample_list
             ]
             if sample_list

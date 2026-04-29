@@ -3,19 +3,21 @@
 from __future__ import annotations
 
 import json
+import os
+import sys
 from types import TracebackType
 from typing import Any
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-import sys
 PYTHON_BIN = sys.executable
-SERVER_MODULE = "server"
-import os
+SERVER_MODULE = "gee_mcp.server"
+
 
 class GEEToolError(RuntimeError):
     """Raised when the MCP server returns an error for a tool call."""
+
 
 class GEEMCPClient:
     """Async context manager wrapping an MCP stdio session.
@@ -32,10 +34,20 @@ class GEEMCPClient:
         self._cm_session: object = None
 
     async def __aenter__(self) -> GEEMCPClient:
+        # Prepend the local ``src/`` directory to PYTHONPATH so the
+        # example client can launch the server straight from a
+        # checkout (without installing the package first).
+        repo_src = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "src"
+        )
+        existing = os.environ.get("PYTHONPATH", "")
+        pythonpath = (
+            f"{repo_src}{os.pathsep}{existing}" if existing else repo_src
+        )
         params = StdioServerParameters(
             command=PYTHON_BIN,
             args=["-m", SERVER_MODULE],
-            env={**os.environ, "PYTHONPATH": os.path.dirname(os.path.abspath(__file__))},
+            env={**os.environ, "PYTHONPATH": pythonpath},
         )
         self._cm_stdio = stdio_client(params)
         read, write = await self._cm_stdio.__aenter__()  # type: ignore[union-attr]
@@ -60,23 +72,20 @@ class GEEMCPClient:
             )
         self._session = None
 
-
     @staticmethod
     def _parse_result(result: Any) -> Any:
         """Extract JSON from a tool result, raising on server errors."""
         text = result.content[0].text
         if result.isError:
             raise GEEToolError(text)
-        
+
         try:
             return json.loads(text)
         except:
             return text
 
-
-    async def test(self) -> str:
-        return {'test': 'uno'}
-
+    async def test(self) -> dict:
+        return {"test": "uno"}
 
     async def get_metadata(self, catalog_id: str) -> dict:
         """Call ``get_dataset_metadata`` on the MCP server."""
@@ -111,57 +120,75 @@ class GEEMCPClient:
     async def list_datasets(self) -> dict:
         """Call ``get_dataset_metadata`` on the MCP server."""
         assert self._session is not None, "Use as async context manager"
-        result = await self._session.call_tool("list_datasets",{})
+        result = await self._session.call_tool("list_datasets", {})
         return self._parse_result(result)
 
-    async def generate_python_from_question(self, 
-                                            question: str, 
-                                            gee_datasets: list[dict] = None, 
-                                            fix_code: bool = True) -> dict:
+    async def generate_python_from_question(
+        self,
+        question: str,
+        gee_datasets: list[dict] = None,
+        fix_code: bool = True,
+    ) -> dict:
         """Call ``generate_python_from_question`` on the MCP server."""
         assert self._session is not None, "Use as async context manager"
         result = await self._session.call_tool(
-            "generate_python_from_question", 
-            {"question": question, "gee_datasets": gee_datasets, 'fix_code': fix_code}
+            "generate_python_from_question",
+            {
+                "question": question,
+                "gee_datasets": gee_datasets,
+                "fix_code": fix_code,
+            },
         )
         return self._parse_result(result)
 
-    async def generate_abstract_graph_from_question(self, 
-                                                    question: str, 
-                                                    gee_datasets: list[dict] = None) -> dict:
+    async def generate_abstract_graph_from_question(
+        self, question: str, gee_datasets: list[dict] = None
+    ) -> dict:
         """Call ``generate_abstract_graph_from_question`` on the MCP server."""
         assert self._session is not None, "Use as async context manager"
         result = await self._session.call_tool(
-            "generate_abstract_graph_from_question", 
-            {"question": question, "gee_datasets": gee_datasets}
+            "generate_abstract_graph_from_question",
+            {"question": question, "gee_datasets": gee_datasets},
         )
         return self._parse_result(result)
 
-    async def generate_python_from_reasoning_steps(self,
-                                                    question: str, 
-                                                    reasoning_steps: str,
-                                                    gee_datasets: list[dict] = None, 
-                                                    fix_code: bool = True) -> dict:
-
+    async def generate_python_from_reasoning_steps(
+        self,
+        question: str,
+        reasoning_steps: str,
+        gee_datasets: list[dict] = None,
+        fix_code: bool = True,
+    ) -> dict:
         """Call ``generate_python_from_reasoning_steps`` on the MCP server."""
         assert self._session is not None, "Use as async context manager"
         result = await self._session.call_tool(
-            "generate_python_from_reasoning_steps", 
-            {"question": question, "gee_datasets": gee_datasets, 'reasoning_steps': reasoning_steps, 'fix_code': fix_code}
+            "generate_python_from_reasoning_steps",
+            {
+                "question": question,
+                "gee_datasets": gee_datasets,
+                "reasoning_steps": reasoning_steps,
+                "fix_code": fix_code,
+            },
         )
         return self._parse_result(result)
 
-    async def generate_python_from_abstract_graph(self,
-                                                    question: str, 
-                                                    abstract_graph: str,
-                                                    gee_datasets: list = None, 
-                                                    fix_code: bool = True) -> dict:
-
+    async def generate_python_from_abstract_graph(
+        self,
+        question: str,
+        abstract_graph: str,
+        gee_datasets: list = None,
+        fix_code: bool = True,
+    ) -> dict:
         """Call ``generate_python_from_abstract_graph`` on the MCP server."""
         assert self._session is not None, "Use as async context manager"
         result = await self._session.call_tool(
-            "generate_python_from_abstract_graph", 
-            {"question": question, "gee_datasets": gee_datasets, 'abstract_graph': abstract_graph, 'fix_code': fix_code}
+            "generate_python_from_abstract_graph",
+            {
+                "question": question,
+                "gee_datasets": gee_datasets,
+                "abstract_graph": abstract_graph,
+                "fix_code": fix_code,
+            },
         )
         return self._parse_result(result)
 
@@ -169,45 +196,58 @@ class GEEMCPClient:
         """Call ``execute_gee_python`` on the MCP server."""
         assert self._session is not None, "Use as async context manager"
         result = await self._session.call_tool(
-            "execute_gee_python", 
-            {"code": code}
+            "execute_gee_python", {"code": code}
         )
         return self._parse_result(result)
 
-    async def extract_factuality_issues(self, question: str, python_code: str) -> dict:
+    async def extract_factuality_issues(
+        self, question: str, python_code: str
+    ) -> dict:
         """Call ``extract_factuality_issues`` on the MCP server."""
         assert self._session is not None, "Use as async context manager"
         result = await self._session.call_tool(
             "extract_factuality_issues",
-            {"question": question, "python_code": python_code}
+            {"question": question, "python_code": python_code},
         )
         return self._parse_result(result)
 
-    async def get_datasets_locations_and_periods(self, question: str, gee_datasets: list[dict]) -> dict:
+    async def get_datasets_locations_and_periods(
+        self, question: str, gee_datasets: list[dict]
+    ) -> dict:
         """Call ``get_datasets_locations_and_periods`` on the MCP server."""
         assert self._session is not None, "Use as async context manager"
         result = await self._session.call_tool(
             "get_datasets_locations_and_periods",
-            {"question": question, "gee_datasets": gee_datasets}
+            {"question": question, "gee_datasets": gee_datasets},
         )
         return self._parse_result(result)
 
-    async def identify_sensible_variables(self, question: str, python_code: str, baseline_answer: str) -> list[dict]:
+    async def identify_sensible_variables(
+        self, question: str, python_code: str, baseline_answer: str
+    ) -> list[dict]:
         """Call ``identify_sensible_variables`` on the MCP server."""
         assert self._session is not None, "Use as async context manager"
         result = await self._session.call_tool(
             "identify_sensible_variables",
-            {"question": question, "python_code": python_code, 'baseline_answer':baseline_answer}
+            {
+                "question": question,
+                "python_code": python_code,
+                "baseline_answer": baseline_answer,
+            },
         )
         return self._parse_result(result)
 
-
-    async def sensitivity_analysis(self, question: str, python_code: str, baseline_answer: str) -> list[dict]:
+    async def sensitivity_analysis(
+        self, question: str, python_code: str, baseline_answer: str
+    ) -> list[dict]:
         """Call ``sensitivity_analysis`` on the MCP server."""
         assert self._session is not None, "Use as async context manager"
         result = await self._session.call_tool(
             "sensitivity_analysis",
-            {"question": question, "python_code": python_code, 'baseline_answer':baseline_answer}
+            {
+                "question": question,
+                "python_code": python_code,
+                "baseline_answer": baseline_answer,
+            },
         )
         return self._parse_result(result)
-
