@@ -10,7 +10,8 @@ of MCP tools covering dataset discovery, metadata extraction, analysis
 primitives, and AI-assisted GEE Python code generation.
 
 
-GEE-MCP is part of Trillium Technologies' initiative to realize the vision of Earth system predictability (ESP).
+GEE-MCP is part of an initiative by Trillium Technologies and ESA to 
+realize the vision of Earth system predictability (ESP).
 You can read about the ESP vision [here](https://eslab.ai/esp). 
 
 
