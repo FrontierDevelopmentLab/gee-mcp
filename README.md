@@ -4,13 +4,16 @@
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)](https://github.com/FrontierDevelopmentLab/gee-mcp)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
+![geostars](imgs/geostars_banner.jpg "GeoSTARS")
+
+
 An [MCP](https://modelcontextprotocol.io/) server that exposes
 [Google Earth Engine](https://earthengine.google.com/) (GEE) as a set
 of MCP tools covering dataset discovery, metadata extraction, analysis
 primitives, and AI-assisted GEE Python code generation.
 
 
-GEE-MCP is part of an initiative by Trillium Technologies and ESA to 
+GEE-MCP is part of an initiative by [Trillium Technologies](https://trillium.tech/) and ESA to 
 realize the vision of Earth system predictability (ESP).
 You can read about the ESP vision [here](https://eslab.ai/esp). 
 
