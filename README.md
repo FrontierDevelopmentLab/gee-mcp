@@ -9,6 +9,11 @@ An [MCP](https://modelcontextprotocol.io/) server that exposes
 of MCP tools covering dataset discovery, metadata extraction, analysis
 primitives, and AI-assisted GEE Python code generation.
 
+
+GEE-MCP is part of Trillium Technologies' initiative to realize the vision of Earth system predictability (ESP).
+You can read about the ESP vision [here](https://eslab.ai/esp). 
+
+
 ## Tools
 
 The server registers the following MCP tools, grouped by purpose.
@@ -205,7 +210,8 @@ poetry run pytest
 
 ## Acknowledgements
 
-Originally created by [Raúl Ramos](https://github.com/rramosp).
+Originally created by [Raúl Ramos](https://github.com/rramosp) and the GeoSTARS team (STARS: Scientific Testing of Agentic Reasoning). 
+Supported by the ESA Phi-Lab as part of Trillium Technologies Earth Systems Lab [ESL](https://eslab.ai/).  
 
 ## License
 
