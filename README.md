@@ -18,6 +18,9 @@ GEE-MCP is part of an initiative by [Trillium Technologies](https://trillium.tec
 realize the vision of Earth system predictability (ESP).
 You can read about the ESP vision [here](https://eslab.ai/esp). 
 
+## Architecture
+
+![GEE MCP architecture diagram showing agents and IDEs connecting through geemcp's three tool groups (AI code generation & validation, analysis & data processing, catalogue & metadata) to Google Earth Engine](imgs/architecture.jpg)
 
 ## Tools
 
