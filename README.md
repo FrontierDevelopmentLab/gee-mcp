@@ -1,10 +1,11 @@
+![geostars](imgs/geostars_banner.png "GeoSTARS")
+
 # GEE MCP
 
 [![CI](https://github.com/FrontierDevelopmentLab/gee-mcp/actions/workflows/main.yml/badge.svg)](https://github.com/FrontierDevelopmentLab/gee-mcp/actions/workflows/main.yml)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)](https://github.com/FrontierDevelopmentLab/gee-mcp)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-![geostars](imgs/geostars_banner.jpg "GeoSTARS")
 
 
 An [MCP](https://modelcontextprotocol.io/) server that exposes
