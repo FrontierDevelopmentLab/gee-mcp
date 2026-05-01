@@ -214,7 +214,7 @@ poetry run pytest
 
 ## Acknowledgements
 
-Originally created by [Raúl Ramos](https://github.com/rramosp) and the GeoSTARS team (STARS: Scientific Testing of Agentic Reasoning). 
+Originally created by the GeoSTARS (STARS: Scientific Testing of Agentic Reasoning) team ([Raúl Ramos](https://github.com/rramosp), [James Walsh](https://github.com/dead-water), [Will Fawcett](https://github.com/will-fawcett), and [Russell Spiewak](https://github.com/r-spiewak)). 
 Supported by the ESA Phi-Lab as part of Trillium Technologies Earth Systems Lab [ESL](https://eslab.ai/).  
 
 ## License

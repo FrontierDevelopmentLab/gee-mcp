@@ -3,8 +3,10 @@ name = "gee-mcp"
 version = "1.0.0"
 description = "MCP server for Google Earth Engine"
 authors = [
-  "rramosp",
-  "will-fawcett-trillium"
+  "r-spiewak <63987228+r-spiewak@users.noreply.github.com>",
+  "dead-water <james.walsh@trillium.tech>",
+  "rramosp <13835425+rramosp@users.noreply.github.com>",
+  "will-fawcett-trillium <192252394+will-fawcett-trillium@users.noreply.github.com>"
 ]
 readme = "README.md"
 packages = [{include = "gee_mcp", from = "src"}]
