@@ -119,29 +119,51 @@ Supported Python versions: 3.11–3.14.
 
 ## Configuration
 
-You need to configure access to **Gemini** and to **Google Earth
+You need to configure access to an **LLM provider** and to **Google Earth
 Engine** via environment variables. Copy [`.env.example`](.env.example)
 to `.env` and fill in the values; `python-dotenv` is loaded on server
 startup.
 
-### Gemini
+### LLM provider
 
-Either set an API key:
+The server talks to an LLM through a small pluggable layer
+(`gee_mcp.server.llm`). Pick a provider and model:
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `GEMINI_API_KEY` | yes | Gemini API key |
+| `LLM_PROVIDER` | yes | One of `google`, `anthropic`, `openai` |
+| `LLM_NAME` | yes | Model id for that provider (e.g. `gemini-3.1-pro-preview`, `claude-opus-4-7`, `gpt-5`) |
+
+Then set the credentials for the provider you chose:
+
+**`google`** — either an API key:
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `GEMINI_API_KEY` | yes | Gemini Developer API key |
 
 `GOOGLE_API_KEY` is also accepted as a fallback for compatibility
 with Google's official SDK convention.
 
-…or use a Vertex AI project (after running `gcloud auth
+…or a Vertex AI project (after running `gcloud auth
 application-default login`):
 
 | Variable | Required | Default | Purpose |
 | --- | --- | --- | --- |
 | `VERTEXAI_PROJECT` | yes |  | GCP project ID for Vertex AI |
 | `VERTEXAI_LOCATION` | no | `global` | GCP region for Vertex AI |
+
+**`anthropic`**:
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `ANTHROPIC_API_KEY` | yes | Anthropic API key |
+
+**`openai`**:
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `OPENAI_API_KEY` | yes | OpenAI API key |
 
 ### Google Earth Engine
 
