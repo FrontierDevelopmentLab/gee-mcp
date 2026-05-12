@@ -8,7 +8,7 @@ from openai import OpenAI
 from google import genai as google_genai
 from google.genai import types
 from loguru import logger
-from typing import Any, TypedDict
+from typing import Any, Protocol, TypedDict
 from pathlib import Path
 from enum import Enum
 
@@ -20,27 +20,84 @@ class LLMProvider(Enum):
     OPENAI = "openai"
 
 
+class LLMCallReturn(TypedDict):
+    """
+    Structure of return from `call`:
+    {"answer": answer, "thought": thought, "response": response}
+    """
+    answer: str
+    thought: str | None
+    response: Any  # raw provider SDK response object, or None for cache hits
+
+
+class ResponseCache(Protocol):
+    """Caches `LLMCallReturn`s keyed by an opaque string."""
+
+    def get(self, key: str) -> LLMCallReturn | None: ...
+
+    def put(self, key: str, value: LLMCallReturn) -> None: ...
+
+
+class NullCache:
+    """No-op cache — the default when caching isn't configured."""
+
+    def get(self, key: str) -> LLMCallReturn | None:
+        return None
+
+    def put(self, key: str, value: LLMCallReturn) -> None:
+        pass
+
+
+class JSONFileCache:
+    """Persists each `LLMCallReturn` as a JSON file named by a hash of the key.
+
+    The raw provider `response` object isn't JSON-serializable, so only the
+    extracted text is persisted; re-reads return `response: None`.
+    """
+
+    def __init__(self, directory: str | Path):
+        self.directory = Path(directory)
+        self.directory.mkdir(parents=True, exist_ok=True)
+        logger.debug(f"response caching enabled at {self.directory}")
+
+    def _path(self, key: str) -> Path:
+        digest = hashlib.sha256(key.encode()).hexdigest()[:16]
+        return self.directory / f"{digest}.json"
+
+    def get(self, key: str) -> LLMCallReturn | None:
+        path = self._path(key)
+        if not path.exists():
+            logger.debug(f"cache miss: {path}")
+            return None
+        logger.debug(f"cache hit: {path}")
+        cached = json.loads(path.read_text())
+        return {
+            "answer": cached["answer"],
+            "thought": cached.get("thought"),
+            "response": None,
+        }
+
+    def put(self, key: str, value: LLMCallReturn) -> None:
+        path = self._path(key)
+        path.write_text(
+            json.dumps(
+                {"answer": value["answer"], "thought": value.get("thought")}, indent=2
+            )
+        )
+        logger.debug(f"cached response: {path}")
+
+
 class BaseLLM(ABC):
 
-    _provider: LLMProvider | None = None 
-
-    class LLMCallReturn(TypedDict):
-        """
-        Structure of return from `call`:
-        {"answer": answer, "thought": thought, "response": response}
-        """
-        answer: str
-        thought: str | None
-        response: Any  # raw provider SDK response object, or None for cache hits
-
+    _provider: LLMProvider | None = None
 
     def __init__(
         self,
         api_key: str | None,
         model: str,
-        cache_dir: Path | None,
+        cache: ResponseCache | None = None,
     ):
-        
+
         if self._provider is None:
             raise RuntimeError(
                 f"{type(self).__name__} must set a class-level `_provider`"
@@ -48,51 +105,18 @@ class BaseLLM(ABC):
 
         self.api_key = api_key
         self.model = model
-        self.cache_dir = cache_dir
-        if cache_dir:
-            os.makedirs(cache_dir, exist_ok=True)
-            logger.debug(f"response caching enabled at {cache_dir}")
+        self.cache: ResponseCache = cache if cache is not None else NullCache()
 
-    def _cache_path(self, text: str, include_thinking: bool) -> str:
-        content = f"{self.model}::{include_thinking}::{text}"
-        key = hashlib.sha256(content.encode()).hexdigest()[:16]
-        return os.path.join(self.cache_dir, f"{key}.json")
-
-    def _check_cache(self, path: str) -> LLMCallReturn | None:
-        if os.path.exists(path):
-            logger.debug(f"cache hit: {path}")
-            with open(path) as f:
-                cached = json.load(f)
-            return {
-                "answer": cached["answer"],
-                "thought": cached.get("thought"),
-                "response": None,  # raw provider response isn't persisted
-            }
-        logger.debug(f"cache miss: {path}")
-        return None
-
-    def _save_to_cache(self, path: str, call_return: LLMCallReturn):
-        # `response` is a provider SDK object and isn't JSON-serializable; only
-        # the extracted text is persisted (re-reads get `response: None`).
-        with open(path, "w") as f:
-            json.dump(
-                {"answer": call_return["answer"], "thought": call_return.get("thought")},
-                f,
-                indent=2,
-            )
-        logger.debug("cached response")
+    def _cache_key(self, text: str, include_thinking: bool) -> str:
+        return f"{self.model}::{include_thinking}::{text}"
 
     def call(self, text: str, include_thinking: bool=True) -> LLMCallReturn:
-        cache_path = (
-            self._cache_path(text, include_thinking) if self.cache_dir else None
-        )
-        if cache_path is not None:
-            cached = self._check_cache(cache_path)
-            if cached is not None:
-                return cached
+        key = self._cache_key(text, include_thinking)
+        cached = self.cache.get(key)
+        if cached is not None:
+            return cached
         call_return = self._call(text=text, include_thinking=include_thinking)
-        if cache_path is not None:
-            self._save_to_cache(cache_path, call_return)
+        self.cache.put(key, call_return)
         return call_return
 
     @abstractmethod
@@ -108,14 +132,14 @@ class OpenAILLM(BaseLLM):
     _provider = LLMProvider.OPENAI
 
     def __init__(self,
-        api_key, 
+        api_key,
         model,
-        cache_dir: str | None = None,
+        cache: ResponseCache | None = None,
     ):
-        super().__init__(api_key=api_key, model=model, cache_dir=cache_dir)
+        super().__init__(api_key=api_key, model=model, cache=cache)
         self.client = OpenAI(api_key=api_key)
 
-    def _call(self, text: str, include_thinking: bool=True) -> BaseLLM.LLMCallReturn:
+    def _call(self, text: str, include_thinking: bool=True) -> LLMCallReturn:
         kwargs: dict = {"model": self.model, "input": text}
         if include_thinking:
             # Only takes effect on reasoning models (o-series, gpt-5, ...); the
@@ -148,13 +172,13 @@ class OpenAILLM(BaseLLM):
         }
 
 
-def init_openai_genai_client(model: str) -> OpenAILLM:
+def init_openai_client(model: str, cache: ResponseCache | None = None) -> OpenAILLM:
     api_key = os.getenv("OPENAI_API_KEY")
 
     if api_key is None:
         raise ValueError("API key for OpenAI not found.")
 
-    return OpenAILLM(api_key=api_key, model=model)
+    return OpenAILLM(api_key=api_key, model=model, cache=cache)
 
 
 # -------- File Anthropic -----------------------
@@ -171,13 +195,13 @@ class AnthropicLLM(BaseLLM):
     def __init__(self,
         api_key,
         model,
-        cache_dir: str | None = None,
+        cache: ResponseCache | None = None,
     ):
 
-        super().__init__(api_key=api_key, model=model, cache_dir=cache_dir)
+        super().__init__(api_key=api_key, model=model, cache=cache)
         self.client = anthropic.Anthropic(api_key=api_key)
 
-    def _call(self, text: str, include_thinking: bool=True) -> BaseLLM.LLMCallReturn:
+    def _call(self, text: str, include_thinking: bool=True) -> LLMCallReturn:
 
         if include_thinking:
             # Adaptive thinking is the only supported "on" mode on Opus 4.7;
@@ -205,13 +229,15 @@ class AnthropicLLM(BaseLLM):
         return {"answer": answer, "thought": thought, "response": response}
 
 
-def init_anthropic_genai_client(model: str) -> AnthropicLLM:
+def init_anthropic_client(
+    model: str, cache: ResponseCache | None = None
+) -> AnthropicLLM:
     api_key = os.getenv("ANTHROPIC_API_KEY")
 
     if api_key is None:
         raise ValueError("API key for Anthropic not found.")
 
-    return AnthropicLLM(api_key=api_key, model=model)
+    return AnthropicLLM(api_key=api_key, model=model, cache=cache)
 
 
 # ------ File Google -----------------------------------
@@ -227,15 +253,13 @@ class GoogleLLM(BaseLLM):
         project=None,
         location="global",
         model="gemini-3.1-pro-preview",
-        cache_dir=None,
+        cache: ResponseCache | None = None,
     ):
         """
         use either api_key (for Gemini Developer API), or project + location (for VertexAI API)
-
-        :param cache_dir: if set, cache responses to this directory to avoid redundant API calls
         """
 
-        super().__init__(api_key=api_key, model=model, cache_dir=cache_dir)
+        super().__init__(api_key=api_key, model=model, cache=cache)
 
         if api_key is None and project is None:
             raise ValueError(
@@ -255,7 +279,7 @@ class GoogleLLM(BaseLLM):
 
         logger.debug(f"genai client initialized with model {self.model}")
 
-    def _call(self, text, include_thinking=True) -> BaseLLM.LLMCallReturn:
+    def _call(self, text, include_thinking=True) -> LLMCallReturn:
 
 
         if include_thinking:
@@ -284,13 +308,15 @@ class GoogleLLM(BaseLLM):
         return {"answer": answer, "thought": thought, "response": response}
 
 
-def init_google_genai_client(model: str="gemini-3.1-pro-preview") -> GoogleLLM:
+def init_google_client(
+    model: str = "gemini-3.1-pro-preview", cache: ResponseCache | None = None
+) -> GoogleLLM:
     api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     vertexai_project = os.getenv("VERTEXAI_PROJECT", False)
     vertexai_location = os.getenv("VERTEXAI_LOCATION", "global")
 
     if api_key:
-        genai_client = GoogleLLM(api_key=api_key, model=model)
+        genai_client = GoogleLLM(api_key=api_key, model=model, cache=cache)
 
     else:
         if not vertexai_project:
@@ -298,7 +324,7 @@ def init_google_genai_client(model: str="gemini-3.1-pro-preview") -> GoogleLLM:
                 "you must specified either an api key using GEMINI_API_KEY or GOOGLE_API_KEY environment variable or a vertexai project using VERTEXAI_PROJECT environment variable"
             )
         genai_client = GoogleLLM(
-            project=vertexai_project, location=vertexai_location
+            project=vertexai_project, location=vertexai_location, cache=cache
         )
 
     return genai_client
@@ -307,15 +333,16 @@ def init_google_genai_client(model: str="gemini-3.1-pro-preview") -> GoogleLLM:
 # --------------- File genai ----------------------
 
 LLM_INIT_DICT = {
-    LLMProvider.GOOGLE: init_google_genai_client,
-    LLMProvider.ANTHROPIC: init_anthropic_genai_client,
-    LLMProvider.OPENAI: init_openai_genai_client,
+    LLMProvider.GOOGLE: init_google_client,
+    LLMProvider.ANTHROPIC: init_anthropic_client,
+    LLMProvider.OPENAI: init_openai_client,
 }
 
 
 def init_llm_client(
-    provider: str | None = os.getenv("LLM_PROVIDER"), 
+    provider: str | None = os.getenv("LLM_PROVIDER"),
     model: str | None = os.getenv("LLM_NAME"),
+    cache_dir: str | Path | None = None,
 ) -> BaseLLM:
 
     if provider is None:
@@ -332,4 +359,5 @@ def init_llm_client(
     if model is None:
         raise ValueError("LLM identity not configured.")
 
-    return LLM_INIT_DICT[llm_provider](model=model)
+    cache = JSONFileCache(cache_dir) if cache_dir else None
+    return LLM_INIT_DICT[llm_provider](model=model, cache=cache)
