@@ -20,6 +20,21 @@ class LLMProvider(Enum):
     OPENAI = "openai"
 
 
+# provider -> implementing class, populated by the @register_llm decorator
+_LLM_REGISTRY: dict[LLMProvider, type["BaseLLM"]] = {}
+
+
+def register_llm(provider: LLMProvider):
+    """Class decorator: tag a `BaseLLM` subclass with its provider and register it."""
+
+    def deco(cls: type["BaseLLM"]) -> type["BaseLLM"]:
+        cls._provider = provider
+        _LLM_REGISTRY[provider] = cls
+        return cls
+
+    return deco
+
+
 class LLMCallReturn(TypedDict):
     """
     Structure of return from `call`:
@@ -107,6 +122,13 @@ class BaseLLM(ABC):
         self.model = model
         self.cache: ResponseCache = cache if cache is not None else NullCache()
 
+    @classmethod
+    @abstractmethod
+    def from_env(
+        cls, model: str, cache: ResponseCache | None = None
+    ) -> "BaseLLM":
+        """Build an instance using credentials/config from environment variables."""
+
     def _cache_key(self, text: str, include_thinking: bool) -> str:
         return f"{self.model}::{include_thinking}::{text}"
 
@@ -127,9 +149,8 @@ class BaseLLM(ABC):
 # ------ File OpenAI -------------------
 
 
+@register_llm(LLMProvider.OPENAI)
 class OpenAILLM(BaseLLM):
-
-    _provider = LLMProvider.OPENAI
 
     def __init__(self,
         api_key,
@@ -138,6 +159,13 @@ class OpenAILLM(BaseLLM):
     ):
         super().__init__(api_key=api_key, model=model, cache=cache)
         self.client = OpenAI(api_key=api_key)
+
+    @classmethod
+    def from_env(cls, model: str, cache: ResponseCache | None = None) -> "OpenAILLM":
+        api_key = os.getenv("OPENAI_API_KEY")
+        if api_key is None:
+            raise ValueError("API key for OpenAI not found.")
+        return cls(api_key=api_key, model=model, cache=cache)
 
     def _call(self, text: str, include_thinking: bool=True) -> LLMCallReturn:
         kwargs: dict = {"model": self.model, "input": text}
@@ -172,21 +200,11 @@ class OpenAILLM(BaseLLM):
         }
 
 
-def init_openai_client(model: str, cache: ResponseCache | None = None) -> OpenAILLM:
-    api_key = os.getenv("OPENAI_API_KEY")
-
-    if api_key is None:
-        raise ValueError("API key for OpenAI not found.")
-
-    return OpenAILLM(api_key=api_key, model=model, cache=cache)
-
-
 # -------- File Anthropic -----------------------
 
 
+@register_llm(LLMProvider.ANTHROPIC)
 class AnthropicLLM(BaseLLM):
-
-    _provider = LLMProvider.ANTHROPIC
 
     # Anthropic requires an explicit max output token count; adaptive thinking
     # plus tool-free prose answers fit comfortably under this.
@@ -200,6 +218,13 @@ class AnthropicLLM(BaseLLM):
 
         super().__init__(api_key=api_key, model=model, cache=cache)
         self.client = anthropic.Anthropic(api_key=api_key)
+
+    @classmethod
+    def from_env(cls, model: str, cache: ResponseCache | None = None) -> "AnthropicLLM":
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if api_key is None:
+            raise ValueError("API key for Anthropic not found.")
+        return cls(api_key=api_key, model=model, cache=cache)
 
     def _call(self, text: str, include_thinking: bool=True) -> LLMCallReturn:
 
@@ -229,23 +254,11 @@ class AnthropicLLM(BaseLLM):
         return {"answer": answer, "thought": thought, "response": response}
 
 
-def init_anthropic_client(
-    model: str, cache: ResponseCache | None = None
-) -> AnthropicLLM:
-    api_key = os.getenv("ANTHROPIC_API_KEY")
-
-    if api_key is None:
-        raise ValueError("API key for Anthropic not found.")
-
-    return AnthropicLLM(api_key=api_key, model=model, cache=cache)
-
-
 # ------ File Google -----------------------------------
 
 
+@register_llm(LLMProvider.GOOGLE)
 class GoogleLLM(BaseLLM):
-
-    _provider = LLMProvider.GOOGLE
 
     def __init__(
         self,
@@ -279,6 +292,24 @@ class GoogleLLM(BaseLLM):
 
         logger.debug(f"genai client initialized with model {self.model}")
 
+    @classmethod
+    def from_env(
+        cls, model: str = "gemini-3.1-pro-preview", cache: ResponseCache | None = None
+    ) -> "GoogleLLM":
+        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        if api_key:
+            return cls(api_key=api_key, model=model, cache=cache)
+
+        project = os.getenv("VERTEXAI_PROJECT", False)
+        if not project:
+            raise ValueError(
+                "you must specify either an api key using the GEMINI_API_KEY or "
+                "GOOGLE_API_KEY environment variable, or a vertexai project using "
+                "the VERTEXAI_PROJECT environment variable"
+            )
+        location = os.getenv("VERTEXAI_LOCATION", "global")
+        return cls(project=project, location=location, model=model, cache=cache)
+
     def _call(self, text, include_thinking=True) -> LLMCallReturn:
 
 
@@ -308,35 +339,7 @@ class GoogleLLM(BaseLLM):
         return {"answer": answer, "thought": thought, "response": response}
 
 
-def init_google_client(
-    model: str = "gemini-3.1-pro-preview", cache: ResponseCache | None = None
-) -> GoogleLLM:
-    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-    vertexai_project = os.getenv("VERTEXAI_PROJECT", False)
-    vertexai_location = os.getenv("VERTEXAI_LOCATION", "global")
-
-    if api_key:
-        genai_client = GoogleLLM(api_key=api_key, model=model, cache=cache)
-
-    else:
-        if not vertexai_project:
-            raise ValueError(
-                "you must specified either an api key using GEMINI_API_KEY or GOOGLE_API_KEY environment variable or a vertexai project using VERTEXAI_PROJECT environment variable"
-            )
-        genai_client = GoogleLLM(
-            project=vertexai_project, location=vertexai_location, cache=cache
-        )
-
-    return genai_client
-
-
 # --------------- File genai ----------------------
-
-LLM_INIT_DICT = {
-    LLMProvider.GOOGLE: init_google_client,
-    LLMProvider.ANTHROPIC: init_anthropic_client,
-    LLMProvider.OPENAI: init_openai_client,
-}
 
 
 def init_llm_client(
@@ -360,4 +363,4 @@ def init_llm_client(
         raise ValueError("LLM identity not configured.")
 
     cache = JSONFileCache(cache_dir) if cache_dir else None
-    return LLM_INIT_DICT[llm_provider](model=model, cache=cache)
+    return _LLM_REGISTRY[llm_provider].from_env(model=model, cache=cache)
