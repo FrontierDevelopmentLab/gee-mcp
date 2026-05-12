@@ -2,13 +2,13 @@ import json
 
 from loguru import logger
 
-from .genai import init_genai_client
+from .genai import init_llm_client
 from .helpers import extract_xml_tag
 
 
 class GEEPythonExecution:
     def __init__(self, genai_client=None):
-        self.genai_client = genai_client or init_genai_client()
+        self.genai_client = genai_client or init_llm_client()
 
     def exec(self, code):
         namespace: dict = {}

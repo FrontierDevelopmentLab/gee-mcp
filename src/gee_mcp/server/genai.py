@@ -3,11 +3,12 @@ import json
 import os
 from abc import abstractmethod, ABC
 import anthropic
+import openai
 from openai import OpenAI
 from google import genai as google_genai
 from google.genai import types
 from loguru import logger
-from typing import TypedDict
+from typing import Any, TypedDict
 from pathlib import Path
 from enum import Enum
 
@@ -29,9 +30,9 @@ class BaseLLM(ABC):
         {"answer": answer, "thought": thought, "response": response}
         """
         answer: str
-        thought: str
-        resposne: str
-        
+        thought: str | None
+        response: Any  # raw provider SDK response object, or None for cache hits
+
 
     def __init__(
         self,
@@ -41,44 +42,57 @@ class BaseLLM(ABC):
     ):
         
         if self._provider is None:
-            raise RuntimeError("something ... ")
+            raise RuntimeError(
+                f"{type(self).__name__} must set a class-level `_provider`"
+            )
 
+        self.api_key = api_key
         self.model = model
         self.cache_dir = cache_dir
         if cache_dir:
             os.makedirs(cache_dir, exist_ok=True)
             logger.debug(f"response caching enabled at {cache_dir}")
 
-    def _cache_key(self, text: str, include_thinking: bool) -> str:
+    def _cache_path(self, text: str, include_thinking: bool) -> str:
         content = f"{self.model}::{include_thinking}::{text}"
-        return hashlib.sha256(content.encode()).hexdigest()[:16]
-    
+        key = hashlib.sha256(content.encode()).hexdigest()[:16]
+        return os.path.join(self.cache_dir, f"{key}.json")
 
-    def _check_cache(self, text, include_thinking) -> LLMCallReturn:
-        # check cache
-        key = self._cache_key(text, include_thinking)
-        self._cache_path = os.path.join(self.cache_dir, f"{key}.json")
-        if os.path.exists(self._cache_path):
-            logger.debug(f"cache hit: {key}")
-            with open(self._cache_path) as f:
+    def _check_cache(self, path: str) -> LLMCallReturn | None:
+        if os.path.exists(path):
+            logger.debug(f"cache hit: {path}")
+            with open(path) as f:
                 cached = json.load(f)
             return {
                 "answer": cached["answer"],
                 "thought": cached.get("thought"),
-                "response": cached.get("response"),
+                "response": None,  # raw provider response isn't persisted
             }
- 
-    def _save_to_cache(self, call_return: LLMCallReturn):
-        with open(self._cache_path, "w") as f:
-            json.dump(call_return, f, indent=2)
+        logger.debug(f"cache miss: {path}")
+        return None
+
+    def _save_to_cache(self, path: str, call_return: LLMCallReturn):
+        # `response` is a provider SDK object and isn't JSON-serializable; only
+        # the extracted text is persisted (re-reads get `response: None`).
+        with open(path, "w") as f:
+            json.dump(
+                {"answer": call_return["answer"], "thought": call_return.get("thought")},
+                f,
+                indent=2,
+            )
         logger.debug("cached response")
 
     def call(self, text: str, include_thinking: bool=True) -> LLMCallReturn:
-        if self.cache_dir:
-            return self._check_cache(text=text, include_thinking=include_thinking)
+        cache_path = (
+            self._cache_path(text, include_thinking) if self.cache_dir else None
+        )
+        if cache_path is not None:
+            cached = self._check_cache(cache_path)
+            if cached is not None:
+                return cached
         call_return = self._call(text=text, include_thinking=include_thinking)
-        if self.cache_dir:
-            self._save_to_cache(call_return)
+        if cache_path is not None:
+            self._save_to_cache(cache_path, call_return)
         return call_return
 
     @abstractmethod
@@ -102,11 +116,34 @@ class OpenAILLM(BaseLLM):
         self.client = OpenAI(api_key=api_key)
 
     def _call(self, text: str, include_thinking: bool=True) -> BaseLLM.LLMCallReturn:
-        model_response = self.client.responses.create(model=self.model, input=text)
-        answer = model_response.output_text
+        kwargs: dict = {"model": self.model, "input": text}
+        if include_thinking:
+            # Only takes effect on reasoning models (o-series, gpt-5, ...); the
+            # raw chain-of-thought is never returned, just this summary. Some
+            # orgs require verification before summaries are permitted, hence
+            # the fallback below.
+            kwargs["reasoning"] = {"summary": "auto"}
+
+        try:
+            model_response = self.client.responses.create(**kwargs)
+        except openai.BadRequestError:
+            if "reasoning" not in kwargs:
+                raise
+            kwargs.pop("reasoning")
+            model_response = self.client.responses.create(**kwargs)
+
+        thought = None
+        for item in model_response.output:
+            if item.type == "reasoning":
+                parts = [
+                    p.text for p in (item.summary or []) if getattr(p, "text", None)
+                ]
+                thought = "\n".join(parts) or None
+                break
+
         return {
-            "answer": answer,
-            "thought": None,
+            "answer": model_response.output_text,
+            "thought": thought,
             "response": model_response,
         }
 
@@ -283,21 +320,16 @@ def init_llm_client(
 
     if provider is None:
         raise ValueError("LLM provider not found.")
-    
-    if not (provider in LLMProvider):
-        raise ValueError(f"LLM provider must be one of the following: {[prov.value for prov in LLMProvider]}")
-    
+
+    try:
+        llm_provider = LLMProvider(provider)
+    except ValueError:
+        raise ValueError(
+            f"LLM provider must be one of the following: "
+            f"{[prov.value for prov in LLMProvider]}"
+        )
+
     if model is None:
         raise ValueError("LLM identity not configured.")
-    
-    # if provider == LLMProvider.GOOGLE.value:
-    #     return init_google_genai_client(model=model)
-    
-    # if provider == LLMProvider.ANTHROPIC.value:
-    #     pass
 
-    # if provider == LLMProvider.OPENAI.value:
-    #     pass
-
-    llm_provider = LLMProvider(provider)
     return LLM_INIT_DICT[llm_provider](model=model)
