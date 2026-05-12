@@ -2,8 +2,8 @@ import json
 
 from loguru import logger
 
-from .genai import init_llm_client
 from .helpers import extract_xml_tag
+from .llm import init_llm_client
 
 
 class GEEPythonExecution:
