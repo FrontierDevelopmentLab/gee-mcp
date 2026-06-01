@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gee-mcp"
-version = "1.0.0"
+version = "2.0.0"
 description = "MCP server for Google Earth Engine"
 authors = [
   "r-spiewak <63987228+r-spiewak@users.noreply.github.com>",
