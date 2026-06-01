@@ -6,13 +6,13 @@ import numpy as np
 from loguru import logger
 
 from .coderun import GEEPythonExecution
-from .genai import init_genai_client
 from .helpers import (
     NoTagFoundError,
     extract_tag,
     extract_xml_tag,
     remove_leading_spaces,
 )
+from .llm import init_llm_client
 
 
 class QuestionRecord:
@@ -179,7 +179,7 @@ class GeoQuestion:
 
         self.question_record = question_record
         self.qr = self.question_record
-        self.genai_client = init_genai_client()
+        self.genai_client = init_llm_client()
         self.remarks_for_prompts = ""
         self.gee_dataset_list = gee_dataset_list
         self.number_of_fix_iterations = number_of_fix_iterations

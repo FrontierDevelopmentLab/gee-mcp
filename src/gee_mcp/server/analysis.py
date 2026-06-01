@@ -8,15 +8,15 @@ import pandas as pd
 from loguru import logger
 
 from .coderun import _execute_gee_python
-from .genai import init_genai_client
 from .helpers import extract_tag, extract_xml_tag
+from .llm import init_llm_client
 
 
 def _get_datasets_locations_and_periods(
     question: str,
     gee_datasets: list[dict] = None,
 ) -> dict:
-    genai_client = init_genai_client()
+    genai_client = init_llm_client()
 
     dataset_instructions = (
         f"""
@@ -86,7 +86,7 @@ def _get_datasets_locations_and_periods(
 
 
 def _extract_factuality_issues(question: str, python_code: str) -> str:
-    genai_client = init_genai_client()
+    genai_client = init_llm_client()
 
     prompt = f"""
     You are a helpful assistant for Earth Observation data analysis with Google Earth Engine.
@@ -263,7 +263,7 @@ class SensitivityAnalizer:
         python_code_result,
         n_samples_per_code_variable=3,
     ):
-        self.genai_client = init_genai_client()
+        self.genai_client = init_llm_client()
 
         self.question = question
         self.python_code = python_code
@@ -684,7 +684,7 @@ async def _assess_factuality_issue(
     </CODE_RECOMMENDATIONS>
     """
 
-    genai_client = init_genai_client()
+    genai_client = init_llm_client()
     r = genai_client.call(prompt)
 
     code_recommendations = extract_xml_tag(r["answer"], "CODE_RECOMMENDATIONS")

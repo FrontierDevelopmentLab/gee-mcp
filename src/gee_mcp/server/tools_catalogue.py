@@ -227,7 +227,7 @@ def analyze_metadata(dataset_id: str) -> str:
     The Gemini client is created lazily so that the server can start
     without a Gemini API key if this tool is not invoked.
     """
-    from .genai import Gemini
+    from .llm import GoogleLLM
     from .utils import analyze_dataset_metadata
 
     page_content = _get_dataset_info(dataset_id)
@@ -250,7 +250,7 @@ def analyze_metadata(dataset_id: str) -> str:
             }
         )
 
-    genai = Gemini(api_key=api_key)
+    genai = GoogleLLM(api_key=api_key)
     response = analyze_dataset_metadata(genai, page_content)
 
     if isinstance(response, dict) and "answer" in response:

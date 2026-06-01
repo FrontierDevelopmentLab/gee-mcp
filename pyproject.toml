@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gee-mcp"
-version = "1.0.0"
+version = "2.0.0"
 description = "MCP server for Google Earth Engine"
 authors = [
   "r-spiewak <63987228+r-spiewak@users.noreply.github.com>",
@@ -45,6 +45,8 @@ numpy = "*"
 matplotlib = "*"
 python-dotenv = "^1.0"
 google-genai = "*"
+openai = "*"
+anthropic = "*"
 pydantic = "^2.0"
 
 
@@ -64,6 +66,7 @@ pytest-mock = "^3.14.0"
 detect-secrets = "^1.5.0"
 pytest-env = "^1.1.5"
 pylint-per-file-ignores = "^3.2.0"
+ipykernel = "^7.2.0"
 
 [tool.black]
 line-length = 79
